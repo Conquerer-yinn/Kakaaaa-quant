@@ -25,3 +25,16 @@ class TushareDataEngine:
             self.pro._DataApi__token = resolved_token
             self.pro._DataApi__http_url = http_url or TUSHARE_HTTP_URL
 
+    def get_trade_calendar(self, start_date, end_date, exchange="SSE"):
+        # 交易日历是所有增量任务的时间基准。
+        df = self._call_with_retry(
+            self.pro.trade_cal,
+            exchange=exchange,
+            start_date=start_date,
+            end_date=end_date,
+            is_open=1,
+        )
+        if df.empty:
+            return []
+        return sorted(df["cal_date"].astype(str).tolist())
+
