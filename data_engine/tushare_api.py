@@ -38,3 +38,7 @@ class TushareDataEngine:
             return []
         return sorted(df["cal_date"].astype(str).tolist())
 
+    def get_daily_quotes(self, trade_date):
+        # 日线行情是大多数市场指标的基础表。
+        return self._call_with_retry(self.pro.daily, trade_date=trade_date)
+
