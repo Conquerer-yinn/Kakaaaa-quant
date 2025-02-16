@@ -42,3 +42,12 @@ class TushareDataEngine:
         # 日线行情是大多数市场指标的基础表。
         return self._call_with_retry(self.pro.daily, trade_date=trade_date)
 
+    def get_daily_basic(self, trade_date, fields=None):
+        # 日线基础指标主要补充换手率、市值等字段。
+        request_fields = fields or "ts_code,trade_date,turnover_rate,circ_mv"
+        return self._call_with_retry(
+            self.pro.daily_basic,
+            trade_date=trade_date,
+            fields=request_fields,
+        )
+
