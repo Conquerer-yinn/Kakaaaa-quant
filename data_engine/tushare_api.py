@@ -51,3 +51,7 @@ class TushareDataEngine:
             fields=request_fields,
         )
 
+    def get_limit_list(self, trade_date):
+        # limit_list_d 同时包含涨停、跌停、炸板等连板信息。
+        return self._call_with_retry(self.pro.limit_list_d, trade_date=trade_date)
+
