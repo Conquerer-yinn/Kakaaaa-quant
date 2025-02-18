@@ -55,3 +55,7 @@ class TushareDataEngine:
         # limit_list_d 同时包含涨停、跌停、炸板等连板信息。
         return self._call_with_retry(self.pro.limit_list_d, trade_date=trade_date)
 
+    def get_stk_limit(self, trade_date):
+        # stk_limit 提供涨跌停价格，用于回退判断炸板。
+        return self._call_with_retry(self.pro.stk_limit, trade_date=trade_date)
+
