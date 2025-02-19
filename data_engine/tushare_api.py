@@ -59,3 +59,13 @@ class TushareDataEngine:
         # stk_limit 提供涨跌停价格，用于回退判断炸板。
         return self._call_with_retry(self.pro.stk_limit, trade_date=trade_date)
 
+    def get_index_daily(self, ts_code, start_date=None, end_date=None, trade_date=None):
+        # 指数日线主要用于竞价卡片里的开盘强弱判断。
+        kwargs = {"ts_code": ts_code}
+        if trade_date:
+            kwargs["trade_date"] = trade_date
+        else:
+            kwargs["start_date"] = start_date
+            kwargs["end_date"] = end_date
+        return self._call_with_retry(self.pro.index_daily, **kwargs)
+
