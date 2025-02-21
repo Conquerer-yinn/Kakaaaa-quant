@@ -69,3 +69,13 @@ class TushareDataEngine:
             kwargs["end_date"] = end_date
         return self._call_with_retry(self.pro.index_daily, **kwargs)
 
+    def get_stock_basic(self, fields=None):
+        # 股票基础信息主要用于过滤 ST、次新股和划分板块。
+        request_fields = fields or "ts_code,name,list_date,market"
+        return self._call_with_retry(
+            self.pro.stock_basic,
+            exchange="",
+            list_status="L",
+            fields=request_fields,
+        )
+
