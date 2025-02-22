@@ -79,3 +79,7 @@ class TushareDataEngine:
             fields=request_fields,
         )
 
+    def get_stock_open_auction(self, trade_date):
+        # 开盘集合竞价数据适合做竞价卡片的盘后复盘版本。
+        return self._call_with_retry(self.pro.stk_auction_o, trade_date=trade_date)
+
