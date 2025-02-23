@@ -83,3 +83,14 @@ class TushareDataEngine:
         # 开盘集合竞价数据适合做竞价卡片的盘后复盘版本。
         return self._call_with_retry(self.pro.stk_auction_o, trade_date=trade_date)
 
+    def get_realtime_index_quotes(self, ts_code):
+        # 实时指数快照用于盘中节奏卡片。
+        return self._call_with_retry(self.pro.rt_idx_k, ts_code=ts_code)
+
+    def get_realtime_stock_quotes(self, ts_code=None):
+        # 实时股票快照优先尝试全市场，不支持时由上层做降级处理。
+        kwargs = {}
+        if ts_code:
+            kwargs["ts_code"] = ts_code
+        return self._call_with_retry(self.pro.rt_k, **kwargs)
+
