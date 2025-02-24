@@ -94,3 +94,35 @@ class TushareDataEngine:
             kwargs["ts_code"] = ts_code
         return self._call_with_retry(self.pro.rt_k, **kwargs)
 
+    def _call_with_retry(self, api_func, **kwargs):
+        # Tushare 常见失败是限流和超时，这里统一做轻量重试。
+        last_error = None
+        for attempt in range(1, self.max_retries + 1):
+            self._sleep_if_needed()
+            try:
+                return api_func(**kwargs)
+            except Exception as exc:
+                last_error = exc
+                if not self._should_retry(exc) or attempt == self.max_retries:
+                    raise
+
+                wait_seconds = max(self.request_delay, 1) * (2 ** attempt)
+                print(f"Tushare request failed on attempt {attempt}: {exc}. Retrying in {wait_seconds:.1f}s ...")
+                time.sleep(wait_seconds)
+
+        raise last_error
+
+    def _should_retry(self, exc):
+        message = str(exc)
+        retry_keywords = [
+            "请求上限",
+            "Max retries exceeded",
+            "Failed to establish a new connection",
+            "每分钟最多访问该接口",
+            "请求过于频繁",
+            "请求超时",
+        ]
+        if any(keyword in message for keyword in retry_keywords):
+            return True
+        return isinstance(exc, requests.exceptions.RequestException)
+
