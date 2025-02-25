@@ -126,3 +126,7 @@ class TushareDataEngine:
             return True
         return isinstance(exc, requests.exceptions.RequestException)
 
+    def _sleep_if_needed(self):
+        # 每次请求前做最小延迟，避免连续高频触发限流。
+        if self.request_delay and self.request_delay > 0:
+            time.sleep(self.request_delay)
