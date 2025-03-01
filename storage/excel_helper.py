@@ -34,3 +34,15 @@ class ExcelHelper:
     def build_backup_path(file_name):
         return ExcelHelper.build_storage_path(file_name, BACKUP_DIR)
 
+    @staticmethod
+    def backup_file(file_path):
+        if not os.path.exists(file_path):
+            return None
+
+        ExcelHelper.ensure_storage_dirs()
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_name = f"{timestamp}_{os.path.basename(file_path)}"
+        backup_path = os.path.join(BACKUP_DIR, backup_name)
+        shutil.copy2(file_path, backup_path)
+        return backup_path
+
