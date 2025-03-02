@@ -46,3 +46,16 @@ class ExcelHelper:
         shutil.copy2(file_path, backup_path)
         return backup_path
 
+    @staticmethod
+    def read_sheet(file_name, sheet_name, base_dir=MASTER_DATA_DIR):
+        file_path = ExcelHelper.build_storage_path(file_name, base_dir)
+        if not os.path.exists(file_path):
+            return None
+
+        try:
+            df = pd.read_excel(file_path, sheet_name=sheet_name)
+        except ValueError:
+            # 旧工作簿如果还没有这个 sheet，就按首次写入处理。
+            return None
+        return ExcelHelper._normalize_date_column(df)
+
