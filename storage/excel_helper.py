@@ -59,3 +59,26 @@ class ExcelHelper:
             return None
         return ExcelHelper._normalize_date_column(df)
 
+    @staticmethod
+    def append_rows(df, file_name, sheet_name="Sheet1", base_dir=MASTER_DATA_DIR):
+        if df.empty:
+            raise ValueError("Cannot write an empty DataFrame to Excel.")
+
+        file_path = ExcelHelper.build_storage_path(file_name, base_dir)
+        if os.path.exists(file_path):
+            ExcelHelper.backup_file(file_path)
+            existing_df = pd.read_excel(file_path, sheet_name=sheet_name)
+            merged_df = pd.concat([existing_df, df], ignore_index=True)
+        else:
+            merged_df = df.copy()
+
+
+        try:
+            merged_df.to_excel(file_path, index=False, sheet_name=sheet_name)
+        except PermissionError as exc:
+            raise PermissionError(
+                f"Cannot write to {file_path}. The file may be open in Excel. Close it and run the job again."
+            ) from exc
+
+        return file_path
+
