@@ -60,7 +60,7 @@ class ExcelHelper:
         return ExcelHelper._normalize_date_column(df)
 
     @staticmethod
-    def append_rows(df, file_name, sheet_name="Sheet1", base_dir=MASTER_DATA_DIR):
+    def append_rows(df, file_name, sheet_name="Sheet1", dedupe_subset=None, base_dir=MASTER_DATA_DIR):
         if df.empty:
             raise ValueError("Cannot write an empty DataFrame to Excel.")
 
@@ -71,6 +71,9 @@ class ExcelHelper:
             merged_df = pd.concat([existing_df, df], ignore_index=True)
         else:
             merged_df = df.copy()
+
+        if dedupe_subset:
+            merged_df = merged_df.drop_duplicates(subset=dedupe_subset, keep="last")
 
 
         try:
