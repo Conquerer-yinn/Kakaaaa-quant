@@ -75,6 +75,7 @@ class ExcelHelper:
         if dedupe_subset:
             merged_df = merged_df.drop_duplicates(subset=dedupe_subset, keep="last")
 
+        merged_df = ExcelHelper._normalize_date_column(merged_df)
 
         try:
             merged_df.to_excel(file_path, index=False, sheet_name=sheet_name)
@@ -84,4 +85,34 @@ class ExcelHelper:
             ) from exc
 
         return file_path
+
+    @staticmethod
+    def _normalize_date_column(df):
+        """统一把日期列保留成 YYYYMMDD 字符串，避免 Excel/引擎再次写坏日期。"""
+        if df is None or df.empty or "日期" not in df.columns:
+            return df
+
+        export_df = df.copy()
+        export_df["日期"] = export_df["日期"].map(ExcelHelper._normalize_single_date)
+        return export_df
+
+    @staticmethod
+    def _normalize_single_date(value):
+        if pd.isna(value):
+            return value
+        if isinstance(value, datetime):
+            return value.strftime("%Y%m%d")
+
+        text = str(value).strip()
+        if not text:
+            return text
+        if text.isdigit() and len(text) == 8:
+            return text
+        if text.endswith('.0') and text[:-2].isdigit() and len(text[:-2]) == 8:
+            return text[:-2]
+
+        parsed = pd.to_datetime(text, errors="coerce")
+        if pd.notna(parsed):
+            return parsed.strftime("%Y%m%d")
+        return text
 
