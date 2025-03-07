@@ -151,3 +151,20 @@ class ExcelHelper:
             return parsed.strftime("%Y%m%d")
         return text
 
+    @staticmethod
+    def _reset_worksheet(worksheet):
+        # 只清空数据 sheet 的内容，不删除 sheet 本身，方便你长期保留图表模板。
+        if worksheet.max_row > 0:
+            worksheet.delete_rows(1, worksheet.max_row)
+        for table_name in list(worksheet.tables.keys()):
+            del worksheet.tables[table_name]
+
+    @staticmethod
+    def _write_dataframe(worksheet, df):
+        for row in dataframe_to_rows(df, index=False, header=True):
+            worksheet.append(row)
+
+        if worksheet.max_row >= 1:
+            for cell in worksheet[1]:
+                cell.font = Font(bold=True)
+
