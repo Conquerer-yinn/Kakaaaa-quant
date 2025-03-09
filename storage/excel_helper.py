@@ -168,3 +168,21 @@ class ExcelHelper:
             for cell in worksheet[1]:
                 cell.font = Font(bold=True)
 
+    @staticmethod
+    def _ensure_table(worksheet, table_name):
+        # 把数据区域包装成 Excel Table，便于图表模板自动扩展到新数据行。
+        if worksheet.max_row < 2 or worksheet.max_column < 1:
+            return
+
+        end_column = get_column_letter(worksheet.max_column)
+        table_ref = f"A1:{end_column}{worksheet.max_row}"
+        table = Table(displayName=table_name, ref=table_ref)
+        table.tableStyleInfo = TableStyleInfo(
+            name="TableStyleMedium2",
+            showFirstColumn=False,
+            showLastColumn=False,
+            showRowStripes=True,
+            showColumnStripes=False,
+        )
+        worksheet.add_table(table)
+
