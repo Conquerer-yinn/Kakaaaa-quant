@@ -122,6 +122,43 @@ class ExcelHelper:
         return file_path
 
     @staticmethod
+    def update_overview_sheet(file_name, sheet_name, rows, clear_rows=24, clear_cols=8, base_dir=MASTER_DATA_DIR):
+        """只刷新总览上方摘要区，尽量不影响你后续放在下方的图表。"""
+        file_path = ExcelHelper.build_storage_path(file_name, base_dir)
+        workbook = load_workbook(file_path) if os.path.exists(file_path) else Workbook()
+
+        if workbook.active and workbook.active.title == "Sheet" and len(workbook.sheetnames) == 1:
+            workbook.remove(workbook.active)
+
+        if sheet_name in workbook.sheetnames:
+            worksheet = workbook[sheet_name]
+        else:
+            worksheet = workbook.create_sheet(sheet_name, 0)
+
+        for row_idx in range(1, clear_rows + 1):
+            for col_idx in range(1, clear_cols + 1):
+                worksheet.cell(row=row_idx, column=col_idx).value = None
+                worksheet.cell(row=row_idx, column=col_idx).font = Font(name="Calibri", size=11)
+                worksheet.cell(row=row_idx, column=col_idx).alignment = Alignment(horizontal="left", vertical="center")
+
+        for row_idx, row_values in enumerate(rows, start=1):
+            for col_idx, value in enumerate(row_values, start=1):
+                cell = worksheet.cell(row=row_idx, column=col_idx)
+                cell.value = value
+                if row_idx in (1, 4, 9):
+                    cell.font = Font(bold=True)
+                if row_idx == 1:
+                    cell.font = Font(bold=True, size=14)
+
+        for column_cells in worksheet.iter_cols(min_col=1, max_col=clear_cols, min_row=1, max_row=clear_rows):
+            column_letter = get_column_letter(column_cells[0].column)
+            max_length = max((len(str(cell.value)) for cell in column_cells if cell.value is not None), default=0)
+            worksheet.column_dimensions[column_letter].width = min(max(max_length + 2, 12), 30)
+
+        workbook.save(file_path)
+        return file_path
+
+    @staticmethod
     def _normalize_date_column(df):
         """统一把日期列保留成 YYYYMMDD 字符串，避免 Excel/引擎再次写坏日期。"""
         if df is None or df.empty or "日期" not in df.columns:
