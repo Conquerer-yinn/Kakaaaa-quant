@@ -223,3 +223,14 @@ class ExcelHelper:
         )
         worksheet.add_table(table)
 
+    @staticmethod
+    def _autofit_columns(worksheet):
+        for column_cells in worksheet.columns:
+            max_length = 0
+            for cell in column_cells:
+                if cell.value is None:
+                    continue
+                max_length = max(max_length, len(str(cell.value)))
+
+            column_letter = get_column_letter(column_cells[0].column)
+            worksheet.column_dimensions[column_letter].width = min(max(max_length + 2, 12), 30)
