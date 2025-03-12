@@ -39,3 +39,11 @@ Kaka_Quant/
 ├── 补充开发计划.md
 └── README.md
 ```
+
+## 存储层使用约定
+
+当前阶段的存储约定很简单，但必须遵守：
+
+1. 业务逻辑不允许绕过 `storage/` 直接写 Excel。
+2. 主表统一放在 `storage/data_master/`，备份统一进 `storage/backups/`。
+3. 写入主表之前，先做一次时间戳备份，再执行覆盖或追加。
