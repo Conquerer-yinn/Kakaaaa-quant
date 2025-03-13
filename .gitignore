@@ -31,8 +31,22 @@ ENV/
 env.bak/
 venv.bak/
 
+# Project Specific
+logs/
+.omx/
+storage/temporary_buffer/
+storage/backups/
+
+# Data (根据需求，建议不跟踪原始行情大文件)
+# storage/data_master/*.xlsx
+
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+
+# Config (隐藏 Token)
+# common/config.py
+
+storage/data_master/*.xlsx
