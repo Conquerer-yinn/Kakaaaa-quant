@@ -11,9 +11,16 @@
 
 
 def build_daily_basics_row(trade_date, daily_df, limit_df):
-    up_count = int((daily_df["pct_chg"] > 0).sum())
-    down_count = int((daily_df["pct_chg"] < 0).sum())
-    total_amount = round(float(daily_df["amount"].sum()) / 1e5, 2)
+    # 即使某天 daily 数据为空，也要返回完整字段，方便后续落表。
+    if daily_df is None or daily_df.empty:
+        up_count = 0
+        down_count = 0
+        total_amount = 0.0
+    else:
+        up_count = int((daily_df["pct_chg"] > 0).sum())
+        down_count = int((daily_df["pct_chg"] < 0).sum())
+        # amount 原始单位是千元，/ 1e5 后得到亿元。
+        total_amount = round(float(daily_df["amount"].sum()) / 1e5, 2)
 
     limit_up_count = 0
     limit_down_count = 0
