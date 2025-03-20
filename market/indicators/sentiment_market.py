@@ -54,3 +54,23 @@ def build_market_overview_row(trade_date, daily_df, limit_df, stk_limit_df):
     }
 
 
+def normalize_daily_df(daily_df):
+    if daily_df is None or daily_df.empty:
+        return pd.DataFrame(columns=["ts_code", "pct_chg", "amount", "high", "close", "open", "pre_close"])
+
+    frame = daily_df.copy()
+    for column in ["pct_chg", "amount", "high", "close", "open", "pre_close"]:
+        if column in frame.columns:
+            frame[column] = pd.to_numeric(frame[column], errors="coerce")
+    return frame
+
+
+def normalize_limit_df(limit_df):
+    if limit_df is None or limit_df.empty:
+        return pd.DataFrame(columns=["ts_code", "name", "limit", "limit_times"])
+    frame = limit_df.copy()
+    if "limit" in frame.columns:
+        frame["limit"] = frame["limit"].astype(str)
+    return frame
+
+
