@@ -74,3 +74,14 @@ def normalize_limit_df(limit_df):
     return frame
 
 
+def normalize_limit_price_df(stk_limit_df):
+    if stk_limit_df is None or stk_limit_df.empty:
+        return pd.DataFrame(columns=["ts_code", "up_limit", "down_limit"])
+
+    frame = stk_limit_df.copy()
+    for column in ["up_limit", "down_limit"]:
+        if column in frame.columns:
+            frame[column] = pd.to_numeric(frame[column], errors="coerce")
+    return frame[["ts_code", "up_limit", "down_limit"]]
+
+
