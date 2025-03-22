@@ -85,3 +85,24 @@ def normalize_limit_price_df(stk_limit_df):
     return frame[["ts_code", "up_limit", "down_limit"]]
 
 
+def count_broken_limit(daily_df, stk_limit_df, broken_limit_stocks=None):
+    # 优先采用 Tushare 炸板口径；如果当日没有该字段，再回退到价格判断。
+    if broken_limit_stocks is not None and not broken_limit_stocks.empty:
+        return int(len(broken_limit_stocks))
+
+    if daily_df.empty or stk_limit_df.empty:
+        return 0
+
+    merged = daily_df.merge(stk_limit_df, on="ts_code", how="left")
+    if merged.empty or "up_limit" not in merged.columns:
+        return 0
+
+    return int(
+        (
+            (merged["high"] >= merged["up_limit"])
+            & (merged["close"] < merged["up_limit"])
+            & merged["up_limit"].notna()
+        ).sum()
+    )
+
+
