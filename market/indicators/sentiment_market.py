@@ -106,3 +106,13 @@ def count_broken_limit(daily_df, stk_limit_df, broken_limit_stocks=None):
     )
 
 
+def count_large_retrace(daily_df):
+    # 大回撤定义为从日内最高到收盘回撤大于等于 7%。
+    if daily_df.empty:
+        return 0
+
+    high = pd.to_numeric(daily_df["high"], errors="coerce")
+    close = pd.to_numeric(daily_df["close"], errors="coerce")
+    valid = high > 0
+    retrace = (high - close) / high
+    return int((valid & (retrace >= 0.07)).sum())
