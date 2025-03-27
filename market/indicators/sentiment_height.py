@@ -59,3 +59,28 @@ def build_height_observation_df(all_daily_df, stock_basic_df, trade_dates, marke
     return pd.DataFrame(rows, columns=HEIGHT_OBSERVATION_COLUMNS)
 
 
+def extract_height(day_df, board_name, label):
+    board_df = filter_board(day_df, board_name)
+    if board_df.empty or board_df["十日涨幅"].dropna().empty:
+        return {f"{label}近十日高度(%)": None, f"{label}高度个股": None}
+
+    idx = board_df["十日涨幅"].idxmax()
+    row = board_df.loc[idx]
+    name = row.get("name") or row.get("ts_code")
+    return {
+        f"{label}近十日高度(%)": round(float(row["十日涨幅"]), 2),
+        f"{label}高度个股": name,
+    }
+
+
+def filter_board(day_df, board_name):
+    if board_name == "all":
+        return day_df
+    if board_name == "main":
+        return day_df[day_df["ts_code"].astype(str).str.startswith(("00", "60"))]
+    if board_name == "chinext":
+        return day_df[day_df["ts_code"].astype(str).str.startswith(("300", "301"))]
+    return day_df.iloc[0:0]
+
+
+
