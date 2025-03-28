@@ -84,3 +84,29 @@ def filter_board(day_df, board_name):
 
 
 
+def normalize_stock_basic_df(stock_basic_df, enriched_df):
+    # stock_basic 偶尔会返回空表或缺列，这里做降级兜底，避免十日高度整条链路失效。
+    if stock_basic_df is None or stock_basic_df.empty:
+        base = pd.DataFrame({"ts_code": enriched_df["ts_code"].dropna().astype(str).unique()})
+        base["name"] = base["ts_code"]
+        base["list_date"] = pd.Timestamp("2000-01-01")
+        base["是否ST"] = False
+        return base
+
+    stock_basic = stock_basic_df.copy()
+    if "ts_code" not in stock_basic.columns:
+        base = pd.DataFrame({"ts_code": enriched_df["ts_code"].dropna().astype(str).unique()})
+        base["name"] = base["ts_code"]
+        base["list_date"] = pd.Timestamp("2000-01-01")
+        base["是否ST"] = False
+        return base
+
+    if "name" not in stock_basic.columns:
+        stock_basic["name"] = stock_basic["ts_code"].astype(str)
+    if "list_date" not in stock_basic.columns:
+        stock_basic["list_date"] = "20000101"
+
+    stock_basic["list_date"] = pd.to_datetime(stock_basic["list_date"], format="%Y%m%d", errors="coerce")
+    stock_basic["list_date"] = stock_basic["list_date"].fillna(pd.Timestamp("2000-01-01"))
+    stock_basic["是否ST"] = stock_basic["name"].fillna("").astype(str).str.contains("ST", case=False)
+    return stock_basic[["ts_code", "name", "list_date", "是否ST"]].drop_duplicates(subset=["ts_code"])
