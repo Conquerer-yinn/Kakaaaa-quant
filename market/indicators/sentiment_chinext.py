@@ -103,3 +103,19 @@ def build_chinext_row(trade_date, daily_df, daily_basic_df, limit_df, stk_limit_
     return row, samples
 
 
+def filter_chinext(df):
+    if df is None or df.empty:
+        return pd.DataFrame(columns=["ts_code"])
+    frame = df.copy()
+    return frame[frame["ts_code"].astype(str).str.startswith(("300", "301"))]
+
+
+def ensure_columns(df, columns):
+    # Tushare 某些日期返回字段不完整，这里先补空列保证后续逻辑稳定。
+    frame = df.copy()
+    for column in columns:
+        if column not in frame.columns:
+            frame[column] = None
+    return frame
+
+
