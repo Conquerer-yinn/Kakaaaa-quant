@@ -28,7 +28,7 @@ def build_chinext_row(trade_date, daily_df, daily_basic_df, limit_df, stk_limit_
     chinext_limit_price = ensure_columns(filter_chinext(stk_limit_df), ["ts_code", "up_limit"])
 
     chinext_amount = round(float(pd.to_numeric(chinext_daily["amount"], errors="coerce").fillna(0).sum()) / 1e5, 2)
-    amount_ratio = round(chinext_amount / total_amount * 100, 2) if total_amount else 0.0
+    amount_ratio = round(chinext_amount / total_amount * 100, 2)
 
     limit_up = chinext_limit[chinext_limit["limit"] == "U"].copy()
     broken_limit = chinext_limit[chinext_limit["limit"] == "Z"].copy()
@@ -119,3 +119,16 @@ def ensure_columns(df, columns):
     return frame
 
 
+def build_broken_codes(daily_df, stk_limit_df, broken_limit_df=None):
+    if broken_limit_df is not None and not broken_limit_df.empty:
+        return broken_limit_df["ts_code"].dropna().astype(str).tolist()
+
+    if daily_df.empty or stk_limit_df.empty:
+        return []
+
+    merged = daily_df.merge(stk_limit_df[["ts_code", "up_limit"]], on="ts_code", how="left")
+    broken_mask = (
+        (pd.to_numeric(merged["high"], errors="coerce") >= pd.to_numeric(merged["up_limit"], errors="coerce"))
+        & (pd.to_numeric(merged["close"], errors="coerce") < pd.to_numeric(merged["up_limit"], errors="coerce"))
+    )
+    return merged.loc[broken_mask, "ts_code"].dropna().astype(str).tolist()
