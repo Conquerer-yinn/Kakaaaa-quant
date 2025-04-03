@@ -28,7 +28,7 @@ def build_chinext_row(trade_date, daily_df, daily_basic_df, limit_df, stk_limit_
     chinext_limit_price = ensure_columns(filter_chinext(stk_limit_df), ["ts_code", "up_limit"])
 
     chinext_amount = round(float(pd.to_numeric(chinext_daily["amount"], errors="coerce").fillna(0).sum()) / 1e5, 2)
-    amount_ratio = round(chinext_amount / total_amount * 100, 2)
+    amount_ratio = round(chinext_amount / total_amount * 100, 2) if total_amount else 0.0
 
     limit_up = chinext_limit[chinext_limit["limit"] == "U"].copy()
     broken_limit = chinext_limit[chinext_limit["limit"] == "Z"].copy()
