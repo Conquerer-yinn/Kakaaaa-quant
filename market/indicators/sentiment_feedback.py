@@ -66,3 +66,28 @@ def build_chinext_feedback_rows(trade_dates, daily_by_date, samples_by_date):
     return pd.DataFrame(rows, columns=CHINEXT_FEEDBACK_COLUMNS)
 
 
+def normalize_daily_df(daily_df):
+    if daily_df is None or daily_df.empty:
+        return pd.DataFrame(columns=["ts_code", "open", "close", "high", "pre_close"]).set_index("ts_code")
+
+    frame = daily_df.copy()
+    for column in ["open", "close", "high", "pre_close"]:
+        if column in frame.columns:
+            frame[column] = pd.to_numeric(frame[column], errors="coerce")
+    return frame.set_index("ts_code")
+
+
+def summarize_sample_feedback(current_daily, ts_codes):
+    matched = current_daily.loc[current_daily.index.intersection([str(code) for code in ts_codes])]
+    if matched.empty:
+        return {"sample_count": 0, "avg_open": 0.0, "avg_close": 0.0}
+
+    pre_close = pd.to_numeric(matched["pre_close"], errors="coerce")
+
+    open_premium = (matched["open"] / pre_close - 1) * 100
+    close_premium = (matched["close"] / pre_close - 1) * 100
+    return {
+        "sample_count": int(len(matched)),
+        "avg_open": round(float(open_premium.mean()), 2),
+        "avg_close": round(float(close_premium.mean()), 2),
+    }
