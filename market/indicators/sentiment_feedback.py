@@ -83,6 +83,11 @@ def summarize_sample_feedback(current_daily, ts_codes):
         return {"sample_count": 0, "avg_open": 0.0, "avg_close": 0.0}
 
     pre_close = pd.to_numeric(matched["pre_close"], errors="coerce")
+    valid = pre_close.notna() & (pre_close != 0)
+    matched = matched[valid]
+    pre_close = pre_close[valid]
+    if matched.empty:
+        return {"sample_count": 0, "avg_open": 0.0, "avg_close": 0.0}
 
     open_premium = (matched["open"] / pre_close - 1) * 100
     close_premium = (matched["close"] / pre_close - 1) * 100
