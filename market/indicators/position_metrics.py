@@ -1,6 +1,18 @@
 ﻿import pandas as pd
 
 
+def append_position_columns(df, metric_columns):
+    # 位置度量只做辅助判断，不改变原始指标本身。
+    result = df.copy()
+    for column in metric_columns:
+        if column not in result.columns:
+            continue
+        position_df = build_position_frame(result[column])
+        result[f"{column}位置"] = position_df["位置"]
+        result[f"{column}相对中枢"] = position_df["相对中枢"]
+    return result
+
+
 def build_position_frame(series):
     # 这里用 expanding 窗口，表达“当前值在已有观察区间里的位置”。
     numeric = pd.to_numeric(series, errors="coerce")
