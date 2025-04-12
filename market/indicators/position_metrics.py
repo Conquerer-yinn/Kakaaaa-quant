@@ -13,6 +13,32 @@ def append_position_columns(df, metric_columns):
     return result
 
 
+def build_latest_position_summary(module_name, df, metric_columns):
+    rows = []
+    if df.empty:
+        return rows
+
+    latest_row = df.iloc[-1]
+    for column in metric_columns:
+        if column not in df.columns:
+            continue
+
+        position_df = build_position_frame(df[column])
+        latest_position = position_df.iloc[-1]
+        rows.append(
+            {
+                "模块": module_name,
+                "指标": column,
+                "最新值": round_float(latest_row[column]),
+                "近期低点": round_float(latest_position["近期低点"]),
+                "近期高点": round_float(latest_position["近期高点"]),
+                "区间位置": latest_position["位置"],
+                "相对中枢": latest_position["相对中枢"],
+            }
+        )
+    return rows
+
+
 def build_position_frame(series):
     # 这里用 expanding 窗口，表达“当前值在已有观察区间里的位置”。
     numeric = pd.to_numeric(series, errors="coerce")
@@ -55,3 +81,9 @@ def build_position_frame(series):
     return frame[["近期低点", "近期高点", "位置", "相对中枢"]]
 
 
+def round_float(value):
+    if pd.isna(value):
+        return None
+    if isinstance(value, (int, float)):
+        return round(float(value), 2)
+    return value
