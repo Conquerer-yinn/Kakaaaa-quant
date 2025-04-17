@@ -24,6 +24,23 @@ def default_end_date():
     return datetime.today().strftime("%Y%m%d")
 
 
+def normalize_ymd(value):
+    if value is None or value == "":
+        return None
+
+    if isinstance(value, datetime):
+        return value.strftime("%Y%m%d")
+
+    text = str(value).strip()
+    if not text:
+        return None
+
+    if text.isdigit() and len(text) == 8:
+        return text
+
+    return pd.to_datetime(text).strftime("%Y%m%d")
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Fetch and update daily basics data.")
     parser.add_argument(
