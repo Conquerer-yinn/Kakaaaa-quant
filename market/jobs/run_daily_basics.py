@@ -41,6 +41,27 @@ def normalize_ymd(value):
     return pd.to_datetime(text).strftime("%Y%m%d")
 
 
+def get_existing_last_date(output_file, sheet_name=DAILY_BASICS_SHEET):
+    # 增量更新时，以 Excel 里最后一条实际数据作为准绳。
+    file_path = ExcelHelper.build_master_path(output_file)
+    if not os.path.exists(file_path):
+        return None
+
+    existing_df = pd.read_excel(file_path, sheet_name=sheet_name)
+    if existing_df.empty or DATE_COLUMN not in existing_df.columns:
+        return None
+
+    date_series = existing_df[DATE_COLUMN].dropna()
+    if date_series.empty:
+        return None
+
+    normalized_dates = date_series.map(normalize_ymd).dropna()
+    if normalized_dates.empty:
+        return None
+
+    return max(normalized_dates)
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Fetch and update daily basics data.")
     parser.add_argument(
