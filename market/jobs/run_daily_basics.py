@@ -62,6 +62,25 @@ def get_existing_last_date(output_file, sheet_name=DAILY_BASICS_SHEET):
     return max(normalized_dates)
 
 
+def resolve_date_range(start_date, end_date, output_file, sheet_name=DAILY_BASICS_SHEET):
+    resolved_end = normalize_ymd(end_date) or default_end_date()
+    resolved_start = normalize_ymd(start_date)
+
+    # 传了 start_date 就按手动区间跑，适合首次建表或历史补数。
+    if resolved_start:
+        return resolved_start, resolved_end, "manual", None
+
+    # 不传 start_date 就默认做增量更新，从已有最后日期的下一天继续。
+    last_date = get_existing_last_date(output_file, sheet_name=sheet_name)
+    if last_date is None:
+        raise ValueError(
+            "No existing daily basics file was found. Use --start-date and --end-date for the first initialization run."
+        )
+
+    next_date = (datetime.strptime(last_date, "%Y%m%d") + timedelta(days=1)).strftime("%Y%m%d")
+    return next_date, resolved_end, "incremental", last_date
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Fetch and update daily basics data.")
     parser.add_argument(
