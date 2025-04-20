@@ -81,6 +81,31 @@ def resolve_date_range(start_date, end_date, output_file, sheet_name=DAILY_BASIC
     return next_date, resolved_end, "incremental", last_date
 
 
+def collect_daily_basics(start_date, end_date):
+    engine = TushareDataEngine()
+    trade_dates = engine.get_trade_calendar(start_date, end_date)
+
+    if not trade_dates:
+        print(f"No open trade days found between {start_date} and {end_date}.")
+        return pd.DataFrame(columns=DAILY_BASICS_COLUMNS)
+
+    rows = []
+    for trade_date in trade_dates:
+        print(f"Processing {trade_date} ...")
+        try:
+            daily_df = engine.get_daily_quotes(trade_date)
+            limit_df = engine.get_limit_list(trade_date)
+            rows.append(build_daily_basics_row(trade_date, daily_df, limit_df))
+        except Exception as exc:
+            # 单日失败不影响整段任务继续跑完。
+            print(f"Failed on {trade_date}: {exc}")
+
+    if not rows:
+        return pd.DataFrame(columns=DAILY_BASICS_COLUMNS)
+
+    return pd.DataFrame(rows, columns=DAILY_BASICS_COLUMNS)
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Fetch and update daily basics data.")
     parser.add_argument(
