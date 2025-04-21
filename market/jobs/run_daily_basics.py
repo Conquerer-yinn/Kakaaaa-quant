@@ -106,6 +106,42 @@ def collect_daily_basics(start_date, end_date):
     return pd.DataFrame(rows, columns=DAILY_BASICS_COLUMNS)
 
 
+def run_daily_basics(start_date=None, end_date=None, output_file=DAILY_BASICS_FILE):
+    # 先判断本次是手动补数，还是自动续更。
+    resolved_start, resolved_end, run_mode, existing_last_date = resolve_date_range(
+        start_date=start_date,
+        end_date=end_date,
+        output_file=output_file,
+        sheet_name=DAILY_BASICS_SHEET,
+    )
+
+    if resolved_start > resolved_end:
+        print(f"No update needed. Existing data already covers up to {existing_last_date}.")
+        return None
+
+    if run_mode == "incremental":
+        print(
+            "Running in incremental mode: "
+            f"existing data ends at {existing_last_date}, updating {resolved_start} -> {resolved_end}."
+        )
+    else:
+        print(f"Running in manual range mode: {resolved_start} -> {resolved_end}.")
+
+    df = collect_daily_basics(resolved_start, resolved_end)
+    if df.empty:
+        print("No daily basics data collected.")
+        return None
+
+    output_path = ExcelHelper.append_rows(
+        df=df,
+        file_name=output_file,
+        sheet_name=DAILY_BASICS_SHEET,
+        dedupe_subset=[DATE_COLUMN],
+    )
+    print(f"Wrote {len(df)} rows to {output_path}")
+    return output_path
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Fetch and update daily basics data.")
     parser.add_argument(
