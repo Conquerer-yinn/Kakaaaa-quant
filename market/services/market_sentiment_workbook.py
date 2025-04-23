@@ -51,3 +51,15 @@ def build_ranged_workbook_name(prefix: str, start_date: str, end_date: str) -> s
     return f"{prefix}_{start_date}_{end_date}.xlsx"
 
 
+def build_history_workbook_name(start_date: str, end_date: str) -> str:
+    return build_ranged_workbook_name(MARKET_SENTIMENT_HISTORY_PREFIX, start_date, end_date)
+
+
+def build_supplement_workbook_name(start_date: str, end_date: str) -> str:
+    return build_ranged_workbook_name(MARKET_SENTIMENT_SUPPLEMENT_PREFIX, start_date, end_date)
+
+
+def build_test_workbook_name(start_date: str, end_date: str) -> str:
+    return build_ranged_workbook_name(MARKET_SENTIMENT_TEST_PREFIX, start_date, end_date)
+
+
