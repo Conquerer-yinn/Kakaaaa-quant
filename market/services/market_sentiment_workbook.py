@@ -63,3 +63,14 @@ def build_test_workbook_name(start_date: str, end_date: str) -> str:
     return build_ranged_workbook_name(MARKET_SENTIMENT_TEST_PREFIX, start_date, end_date)
 
 
+def list_ranged_workbooks(prefix: str, base_dir: str = MASTER_DATA_DIR) -> list[RangedWorkbookName]:
+    results: list[RangedWorkbookName] = []
+    for path in Path(base_dir).glob("*.xlsx"):
+        if path.name.startswith("~$"):
+            continue
+        parsed = parse_ranged_workbook_name(path.name)
+        if parsed and parsed.prefix == prefix:
+            results.append(parsed)
+    return sorted(results, key=lambda item: (item.end_date, item.start_date, item.file_name))
+
+
