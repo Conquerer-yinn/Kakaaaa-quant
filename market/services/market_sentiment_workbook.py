@@ -74,3 +74,14 @@ def list_ranged_workbooks(prefix: str, base_dir: str = MASTER_DATA_DIR) -> list[
     return sorted(results, key=lambda item: (item.end_date, item.start_date, item.file_name))
 
 
+def find_latest_history_workbook(base_dir: str = MASTER_DATA_DIR) -> RangedWorkbookName | None:
+    ranged_history = list_ranged_workbooks(MARKET_SENTIMENT_HISTORY_PREFIX, base_dir=base_dir)
+    if ranged_history:
+        return ranged_history[-1]
+
+    fallback = Path(base_dir) / MARKET_SENTIMENT_HISTORY_FILE
+    if fallback.exists():
+        parsed = parse_ranged_workbook_name(fallback.name)
+        if parsed is not None:
+            return parsed
+    return None
