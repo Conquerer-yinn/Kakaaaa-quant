@@ -104,6 +104,89 @@ def normalize_ymd(value):
 
 
 
+def bootstrap_start_date(end_date, calendar_days):
+    end_dt = datetime.strptime(end_date, "%Y%m%d")
+    return (end_dt - timedelta(days=calendar_days)).strftime("%Y%m%d")
+
+
+
+def build_fetch_start(output_start):
+    start_dt = datetime.strptime(output_start, "%Y%m%d")
+    return (start_dt - timedelta(days=FETCH_BUFFER_DAYS)).strftime("%Y%m%d")
+
+
+
+def get_existing_last_date(file_name):
+    existing_df = ExcelHelper.read_sheet(file_name, MARKET_SENTIMENT_MARKET_SHEET)
+    if existing_df is None or existing_df.empty or DATE_COLUMN not in existing_df.columns:
+        return None
+
+    normalized_dates = existing_df[DATE_COLUMN].dropna().map(normalize_ymd).dropna()
+    if normalized_dates.empty:
+        return None
+    return max(normalized_dates)
+
+
+
+def get_existing_first_date(file_name):
+    existing_df = ExcelHelper.read_sheet(file_name, MARKET_SENTIMENT_MARKET_SHEET)
+    if existing_df is None or existing_df.empty or DATE_COLUMN not in existing_df.columns:
+        return None
+
+    normalized_dates = existing_df[DATE_COLUMN].dropna().map(normalize_ymd).dropna()
+    if normalized_dates.empty:
+        return None
+    return min(normalized_dates)
+
+
+
+def resolve_history_run_plan(start_date=None, end_date=None, output_file=None):
+    resolved_end = normalize_ymd(end_date) or default_end_date()
+    current_history = output_file or _resolve_current_history_workbook()
+    parsed_name = parse_ranged_workbook_name(current_history) if current_history else None
+
+    history_start = parsed_name.start_date if parsed_name else None
+    existing_last_date = parsed_name.end_date if parsed_name else None
+
+    if current_history and history_start is None:
+        history_start = get_existing_first_date(current_history)
+    if current_history and existing_last_date is None:
+        existing_last_date = get_existing_last_date(current_history)
+
+    resolved_start = normalize_ymd(start_date)
+    if resolved_start:
+        output_start = resolved_start
+    elif existing_last_date:
+        output_start = (datetime.strptime(existing_last_date, "%Y%m%d") + timedelta(days=1)).strftime("%Y%m%d")
+    else:
+        output_start = bootstrap_start_date(resolved_end, HISTORY_BOOTSTRAP_CALENDAR_DAYS)
+
+    history_start = history_start or output_start
+    fetch_start = build_fetch_start(output_start)
+    target_history = build_history_workbook_name(history_start, resolved_end)
+    supplement_file = build_supplement_workbook_name(output_start, resolved_end)
+
+    return {
+        "current_history": current_history,
+        "history_start": history_start,
+        "existing_last_date": existing_last_date,
+        "output_start": output_start,
+        "output_end": resolved_end,
+        "fetch_start": fetch_start,
+        "target_history": target_history,
+        "supplement_file": supplement_file,
+    }
+
+
+
+def _resolve_current_history_workbook():
+    latest_history = find_latest_history_workbook()
+    if latest_history is not None:
+        return latest_history.file_name
+    return None
+
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Build and update market sentiment data workbooks.")
     parser.add_argument("--start-date", default=None, help="YYYYMMDD. 不传时走增量更新。")
