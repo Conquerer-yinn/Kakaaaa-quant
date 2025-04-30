@@ -179,6 +179,20 @@ def resolve_history_run_plan(start_date=None, end_date=None, output_file=None):
 
 
 
+def resolve_test_run_plan(start_date=None, end_date=None, output_file=None):
+    resolved_end = normalize_ymd(end_date) or default_end_date()
+    output_start = normalize_ymd(start_date) or bootstrap_start_date(resolved_end, TEST_BOOTSTRAP_CALENDAR_DAYS)
+    parsed_name = parse_ranged_workbook_name(output_file) if output_file else None
+    target_file = output_file if parsed_name and parsed_name.prefix == "测试数据" else build_test_workbook_name(output_start, resolved_end)
+    return {
+        "output_start": output_start,
+        "output_end": resolved_end,
+        "fetch_start": build_fetch_start(output_start),
+        "target_file": target_file,
+    }
+
+
+
 def _resolve_current_history_workbook():
     latest_history = find_latest_history_workbook()
     if latest_history is not None:
