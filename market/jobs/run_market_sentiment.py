@@ -201,6 +201,48 @@ def _resolve_current_history_workbook():
 
 
 
+def collect_market_snapshots(fetch_start, output_end, should_cancel=None):
+    # 这一层只负责把原始表按交易日拉下来，不做展示逻辑。
+    engine = TushareDataEngine()
+    stock_basic_df = engine.get_stock_basic(fields="ts_code,name,list_date,market")
+    trade_dates = engine.get_trade_calendar(fetch_start, output_end)
+    if not trade_dates:
+        return trade_dates, stock_basic_df, {}, {}, {}, {}, pd.DataFrame(), pd.DataFrame()
+
+    daily_by_date = {}
+    daily_basic_by_date = {}
+    limit_by_date = {}
+    stk_limit_by_date = {}
+    market_rows = []
+    all_daily_frames = []
+
+    for trade_date in trade_dates:
+        _check_cancel(should_cancel)
+        print(f"Processing {trade_date} ...")
+        try:
+            daily_df = engine.get_daily_quotes(trade_date)
+            daily_basic_df = engine.get_daily_basic(trade_date)
+            limit_df = engine.get_limit_list(trade_date)
+            stk_limit_df = engine.get_stk_limit(trade_date)
+        except Exception as exc:
+            # 单日取数失败时继续往后跑，避免整段任务因为一天异常全部中断。
+            print(f"Failed to fetch {trade_date}: {exc}")
+            continue
+
+        daily_by_date[trade_date] = daily_df.copy()
+        daily_basic_by_date[trade_date] = daily_basic_df.copy()
+        limit_by_date[trade_date] = limit_df.copy()
+        stk_limit_by_date[trade_date] = stk_limit_df.copy()
+        market_rows.append(build_market_overview_row(trade_date, daily_df, limit_df, stk_limit_df))
+        all_daily_frames.append(daily_df.copy())
+        _check_cancel(should_cancel)
+
+    all_daily_df = pd.concat(all_daily_frames, ignore_index=True) if all_daily_frames else pd.DataFrame()
+    market_df = pd.DataFrame(market_rows)
+    return trade_dates, stock_basic_df, daily_by_date, daily_basic_by_date, limit_by_date, stk_limit_by_date, all_daily_df, market_df
+
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Build and update market sentiment data workbooks.")
     parser.add_argument("--start-date", default=None, help="YYYYMMDD. 不传时走增量更新。")
