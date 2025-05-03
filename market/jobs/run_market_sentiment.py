@@ -243,6 +243,34 @@ def collect_market_snapshots(fetch_start, output_end, should_cancel=None):
 
 
 
+def build_sentiment_tables(daily_by_date, daily_basic_by_date, limit_by_date, stk_limit_by_date, all_daily_df, market_df, stock_basic_df, should_cancel=None):
+    chinext_rows = []
+    chinext_samples = {}
+    market_lookup = market_df.set_index(DATE_COLUMN)[MARKET_AMOUNT_COLUMN].to_dict() if not market_df.empty else {}
+
+    for trade_date in market_df[DATE_COLUMN].tolist():
+        _check_cancel(should_cancel)
+        row, samples = build_chinext_row(
+            trade_date=trade_date,
+            daily_df=daily_by_date.get(trade_date),
+            daily_basic_df=daily_basic_by_date.get(trade_date),
+            limit_df=limit_by_date.get(trade_date),
+            stk_limit_df=stk_limit_by_date.get(trade_date),
+            total_amount=market_lookup.get(trade_date, 0),
+        )
+        chinext_rows.append(row)
+        chinext_samples[trade_date] = samples
+
+    trade_date_list = market_df[DATE_COLUMN].tolist()
+    _check_cancel(should_cancel)
+    height_df = build_height_observation_df(all_daily_df, stock_basic_df, trade_date_list, market_df)
+    _check_cancel(should_cancel)
+    feedback_df = build_chinext_feedback_rows(trade_date_list, daily_by_date, chinext_samples)
+    chinext_df = pd.DataFrame(chinext_rows).merge(feedback_df, on=DATE_COLUMN, how="left")
+    return height_df, chinext_df
+
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Build and update market sentiment data workbooks.")
     parser.add_argument("--start-date", default=None, help="YYYYMMDD. 不传时走增量更新。")
