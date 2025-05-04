@@ -271,6 +271,24 @@ def build_sentiment_tables(daily_by_date, daily_basic_by_date, limit_by_date, st
 
 
 
+def add_position_metrics(market_df, height_df, chinext_df):
+    # 位置度量继续保留在 Excel 里，方便你后续做人工判断；前端不再展示这些列。
+    market_df = append_position_columns(
+        market_df,
+        [MARKET_AMOUNT_COLUMN, MARKET_LIMIT_UP_COLUMN, MARKET_BROKEN_COLUMN, MARKET_RETRACE_COLUMN, MARKET_STREAK_COLUMN],
+    )
+    height_df = append_position_columns(
+        height_df,
+        [HEIGHT_ALL_VALUE_COLUMN, HEIGHT_MAIN_VALUE_COLUMN, HEIGHT_CHINEXT_VALUE_COLUMN, MARKET_STREAK_COLUMN],
+    )
+    chinext_df = append_position_columns(
+        chinext_df,
+        [CHINEXT_SHARE_COLUMN, CHINEXT_LIMIT_UP_COLUMN, CHINEXT_BROKEN_COLUMN, CHINEXT_RETRACE_COLUMN, CHINEXT_PREMIUM_COLUMN],
+    )
+    return market_df, height_df, chinext_df
+
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Build and update market sentiment data workbooks.")
     parser.add_argument("--start-date", default=None, help="YYYYMMDD. 不传时走增量更新。")
