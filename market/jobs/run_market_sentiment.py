@@ -289,6 +289,42 @@ def add_position_metrics(market_df, height_df, chinext_df):
 
 
 
+def build_overview_rows(market_df, height_df, chinext_df, run_mode):
+    latest_market = market_df.iloc[-1] if not market_df.empty else pd.Series(dtype=object)
+    latest_height = height_df.iloc[-1] if not height_df.empty else pd.Series(dtype=object)
+    latest_chinext = chinext_df.iloc[-1] if not chinext_df.empty else pd.Series(dtype=object)
+
+    summary_rows = []
+    summary_rows.extend(build_latest_position_summary("总市场", market_df, [MARKET_AMOUNT_COLUMN, MARKET_LIMIT_UP_COLUMN, MARKET_BROKEN_COLUMN, MARKET_RETRACE_COLUMN, MARKET_STREAK_COLUMN]))
+    summary_rows.extend(build_latest_position_summary("高度观察", height_df, [HEIGHT_ALL_VALUE_COLUMN, HEIGHT_MAIN_VALUE_COLUMN, HEIGHT_CHINEXT_VALUE_COLUMN]))
+    summary_rows.extend(build_latest_position_summary("创业板", chinext_df, [CHINEXT_SHARE_COLUMN, CHINEXT_LIMIT_UP_COLUMN, CHINEXT_BROKEN_COLUMN, CHINEXT_RETRACE_COLUMN, CHINEXT_PREMIUM_COLUMN]))
+
+    rows = [
+        ["近期市场情绪总览"],
+        ["最新日期", latest_market.get(DATE_COLUMN), None, "运行模式", run_mode],
+        [None],
+        ["最新十日高度", None, None, None, "最新连板高度", None, None, "创业板核心反馈"],
+        ["全市场", latest_height.get(HEIGHT_ALL_STOCK_COLUMN), latest_height.get(HEIGHT_ALL_VALUE_COLUMN), None, "最高连板", latest_market.get(MARKET_STREAK_COLUMN), None, "昨日核心股", latest_chinext.get(CHINEXT_CORE_STOCK_COLUMN)],
+        ["主板", latest_height.get(HEIGHT_MAIN_STOCK_COLUMN), latest_height.get(HEIGHT_MAIN_VALUE_COLUMN), None, "最高连板个股", latest_market.get(MARKET_STREAK_STOCK_COLUMN), None, "次日收盘涨幅", latest_chinext.get(CHINEXT_CORE_CLOSE_COLUMN)],
+        ["创业板", latest_height.get(HEIGHT_CHINEXT_STOCK_COLUMN), latest_height.get(HEIGHT_CHINEXT_VALUE_COLUMN), None, "创业板连板高度", latest_chinext.get(CHINEXT_STREAK_COLUMN), None, "昨日涨停次日收盘", latest_chinext.get(CHINEXT_PREMIUM_COLUMN)],
+        [None],
+        ["模块", "指标", "最新值", "近期低点", "近期高点", "区间位置", "相对中枢"],
+    ]
+
+    for item in summary_rows:
+        rows.append([
+            item.get("模块"),
+            item.get("指标"),
+            item.get("最新值"),
+            item.get("近期低点"),
+            item.get("近期高点"),
+            item.get("区间位置"),
+            item.get("相对中枢"),
+        ])
+    return rows
+
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Build and update market sentiment data workbooks.")
     parser.add_argument("--start-date", default=None, help="YYYYMMDD. 不传时走增量更新。")
