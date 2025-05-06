@@ -325,6 +325,40 @@ def build_overview_rows(market_df, height_df, chinext_df, run_mode):
 
 
 
+def save_data_workbook(file_name, market_df, height_df, chinext_df, run_mode, base_dir=None):
+    output_path = ExcelHelper.upsert_data_workbook(
+        file_name=file_name,
+        sheets={
+            MARKET_SENTIMENT_MARKET_SHEET: market_df,
+            MARKET_SENTIMENT_HEIGHT_SHEET: height_df,
+            MARKET_SENTIMENT_CHINEXT_SHEET: chinext_df,
+        },
+        table_names=SHEET_TABLE_NAMES,
+        base_dir=base_dir or MASTER_DATA_DIR,
+    )
+    overview_rows = build_overview_rows(market_df, height_df, chinext_df, run_mode)
+    ExcelHelper.update_overview_sheet(
+        file_name,
+        MARKET_SENTIMENT_OVERVIEW_SHEET,
+        overview_rows,
+        base_dir=base_dir or MASTER_DATA_DIR,
+    )
+    return output_path
+
+
+
+def write_supplement_workbook(file_name, market_df, height_df, chinext_df):
+    return save_data_workbook(
+        file_name=file_name,
+        market_df=market_df,
+        height_df=height_df,
+        chinext_df=chinext_df,
+        run_mode="supplement",
+        base_dir=BACKUP_DIR,
+    )
+
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Build and update market sentiment data workbooks.")
     parser.add_argument("--start-date", default=None, help="YYYYMMDD. 不传时走增量更新。")
