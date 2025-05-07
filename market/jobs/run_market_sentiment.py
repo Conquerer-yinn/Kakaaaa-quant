@@ -359,6 +359,123 @@ def write_supplement_workbook(file_name, market_df, height_df, chinext_df):
 
 
 
+def _prepare_history_target_file(current_history, target_history):
+    current_path = ExcelHelper.build_master_path(current_history) if current_history else None
+    target_path = ExcelHelper.build_master_path(target_history)
+
+    if current_path and os.path.exists(current_path) and current_history != target_history:
+        if os.path.exists(target_path):
+            ExcelHelper.backup_file(target_path)
+            os.remove(target_path)
+        shutil.copy2(current_path, target_path)
+
+    return current_path, target_path
+
+
+
+def _finalize_history_target_file(current_history, target_history):
+    if not current_history or current_history == target_history:
+        return
+
+    current_path = ExcelHelper.build_master_path(current_history)
+    if os.path.exists(current_path):
+        ExcelHelper.backup_file(current_path)
+        os.remove(current_path)
+
+
+
+def run_market_sentiment(start_date=None, end_date=None, output_file=None, history_mode=True, should_cancel=None):
+    if history_mode:
+        plan = resolve_history_run_plan(start_date=start_date, end_date=end_date, output_file=output_file)
+        run_mode = "incremental_history"
+        current_history = plan["current_history"]
+        target_file = plan["target_history"]
+    else:
+        plan = resolve_test_run_plan(start_date=start_date, end_date=end_date, output_file=output_file)
+        run_mode = "test_range"
+        current_history = None
+        target_file = plan["target_file"]
+
+    output_start = plan["output_start"]
+    output_end = plan["output_end"]
+    fetch_start = plan["fetch_start"]
+
+    if output_start > output_end:
+        last_date = plan.get("existing_last_date")
+        print(f"No update needed. Existing data already covers up to {last_date}.")
+        return None
+
+    if history_mode:
+        print(f"Running in history incremental mode: supplementing {output_start} -> {output_end}.")
+    else:
+        print(f"Running in test mode: building {output_start} -> {output_end}.")
+
+    _check_cancel(should_cancel)
+
+    (
+        trade_dates,
+        stock_basic_df,
+        daily_by_date,
+        daily_basic_by_date,
+        limit_by_date,
+        stk_limit_by_date,
+        all_daily_df,
+        market_df,
+    ) = collect_market_snapshots(fetch_start, output_end, should_cancel=should_cancel)
+
+    if market_df.empty:
+        print("No market data collected.")
+        return None
+
+    _check_cancel(should_cancel)
+    height_df, chinext_df = build_sentiment_tables(
+        daily_by_date=daily_by_date,
+        daily_basic_by_date=daily_basic_by_date,
+        limit_by_date=limit_by_date,
+        stk_limit_by_date=stk_limit_by_date,
+        all_daily_df=all_daily_df,
+        market_df=market_df,
+        stock_basic_df=stock_basic_df,
+        should_cancel=should_cancel,
+    )
+
+    _check_cancel(should_cancel)
+    market_df = market_df[(market_df[DATE_COLUMN] >= output_start) & (market_df[DATE_COLUMN] <= output_end)]
+    height_df = height_df[(height_df[DATE_COLUMN] >= output_start) & (height_df[DATE_COLUMN] <= output_end)]
+    chinext_df = chinext_df[(chinext_df[DATE_COLUMN] >= output_start) & (chinext_df[DATE_COLUMN] <= output_end)]
+
+    if market_df.empty:
+        print("No new market sentiment rows remained after date filtering.")
+        return None
+
+    if history_mode:
+        _check_cancel(should_cancel)
+        supplement_path = write_supplement_workbook(plan["supplement_file"], market_df, height_df, chinext_df)
+        print(f"Wrote supplement workbook to {supplement_path}")
+
+    if history_mode:
+        _check_cancel(should_cancel)
+        if current_history:
+            market_df = merge_with_existing(current_history, MARKET_SENTIMENT_MARKET_SHEET, market_df)
+            height_df = merge_with_existing(current_history, MARKET_SENTIMENT_HEIGHT_SHEET, height_df)
+            chinext_df = merge_with_existing(current_history, MARKET_SENTIMENT_CHINEXT_SHEET, chinext_df)
+
+        _check_cancel(should_cancel)
+        _prepare_history_target_file(current_history, target_file)
+
+    _check_cancel(should_cancel)
+    market_df, height_df, chinext_df = add_position_metrics(market_df, height_df, chinext_df)
+    _check_cancel(should_cancel)
+    output_path = save_data_workbook(target_file, market_df, height_df, chinext_df, run_mode)
+
+    if history_mode:
+        _finalize_history_target_file(current_history, target_file)
+
+    print(f"Wrote market sentiment data workbook to {output_path}")
+    return output_path
+
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Build and update market sentiment data workbooks.")
     parser.add_argument("--start-date", default=None, help="YYYYMMDD. 不传时走增量更新。")
