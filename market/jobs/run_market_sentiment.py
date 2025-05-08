@@ -201,6 +201,17 @@ def _resolve_current_history_workbook():
 
 
 
+def merge_with_existing(output_file, sheet_name, df):
+    existing_df = ExcelHelper.read_sheet(output_file, sheet_name)
+    if existing_df is None or existing_df.empty:
+        return df.reset_index(drop=True)
+
+    merged = pd.concat([existing_df, df], ignore_index=True)
+    merged = merged.drop_duplicates(subset=[DATE_COLUMN], keep="last")
+    return merged.sort_values(DATE_COLUMN).reset_index(drop=True)
+
+
+
 def collect_market_snapshots(fetch_start, output_end, should_cancel=None):
     # 这一层只负责把原始表按交易日拉下来，不做展示逻辑。
     engine = TushareDataEngine()
