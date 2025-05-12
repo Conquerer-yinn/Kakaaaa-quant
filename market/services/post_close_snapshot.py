@@ -23,6 +23,8 @@ def build_post_close_snapshot_from_raw(trade_date: str) -> dict[str, Any]:
     engine = TushareDataEngine()
     calendar_start = _build_calendar_start(trade_date)
     trade_dates = engine.get_trade_calendar(calendar_start, trade_date)
+    if not trade_dates or trade_date not in trade_dates:
+        raise ValueError(f"Trade date {trade_date} is not available from trade calendar.")
 
     daily_df = engine.get_daily_quotes(trade_date)
     limit_df = engine.get_limit_list(trade_date)
