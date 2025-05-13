@@ -51,3 +51,29 @@ def _build_calendar_start(trade_date: str) -> str:
     return (start_dt - timedelta(days=CALENDAR_BUFFER_DAYS)).strftime("%Y%m%d")
 
 
+def _pick_row(df: pd.DataFrame, trade_date: str) -> pd.Series:
+    if df is None or df.empty or DATE_COLUMN not in df.columns:
+        raise ValueError(f"Missing data for {trade_date}.")
+    row_df = df[df[DATE_COLUMN].astype(str) == str(trade_date)]
+    if row_df.empty:
+        raise ValueError(f"Trade date {trade_date} not found in computed snapshot.")
+    return row_df.iloc[-1]
+
+
+def _to_text(value: Any) -> str | None:
+    if value is None or (isinstance(value, float) and pd.isna(value)):
+        return None
+    text = str(value).strip()
+    return text or None
+
+
+def _to_number(value: Any, digits: int = 2) -> float | int | None:
+    if value is None or (isinstance(value, float) and pd.isna(value)):
+        return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    if digits == 0:
+        return int(round(number))
+    return round(number, digits)
