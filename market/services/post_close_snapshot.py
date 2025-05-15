@@ -57,6 +57,8 @@ def build_post_close_snapshot_from_raw(trade_date: str) -> dict[str, Any]:
             market_rows.append(build_market_overview_row(current_date, daily_df, limit_df, stk_limit_df))
 
     market_df = pd.DataFrame(market_rows)
+    if market_df.empty:
+        raise ValueError(f"No market data collected for {trade_date}.")
 
     market_lookup = market_df.set_index(DATE_COLUMN)["总成交额(亿元)"].to_dict()
     chinext_rows = []
