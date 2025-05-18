@@ -46,6 +46,70 @@ def build_post_close_card(snapshot: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def build_summary_text(snapshot: dict[str, Any]) -> str:
+    """第一版用规则生成一句盘后总结，先求稳，不追求太像人工复盘。"""
+    streak = snapshot.get("highest_streak") or 0
+    limit_up = snapshot.get("limit_up_count") or 0
+    broken = snapshot.get("broken_limit_count") or 0
+    chinext_limit_up = snapshot.get("chinext_limit_up_count") or 0
+    core_feedback = snapshot.get("prev_core_next_close_pct")
+
+    parts = []
+    if streak >= 5:
+        parts.append("连板高度仍在")
+    elif streak >= 3:
+        parts.append("连板高度中等")
+    else:
+        parts.append("连板高度偏弱")
+
+    if limit_up >= 80:
+        parts.append("涨停家数较强")
+    elif limit_up >= 40:
+        parts.append("涨停表现中性")
+    else:
+        parts.append("涨停家数偏少")
+
+    if chinext_limit_up >= 8:
+        parts.append("创业板活跃")
+    elif chinext_limit_up >= 3:
+        parts.append("创业板有一定参与度")
+    else:
+        parts.append("创业板热度有限")
+
+    if core_feedback is not None:
+        if core_feedback > 0:
+            parts.append("昨日创业板核心反馈偏正")
+        elif core_feedback < 0:
+            parts.append("昨日创业板核心反馈偏弱")
+
+    if broken >= limit_up and limit_up > 0:
+        parts.append("但失败端压力较明显")
+
+    return "，".join(parts)
+
+
+def build_risk_text(snapshot: dict[str, Any]) -> str:
+    broken = snapshot.get("broken_limit_count") or 0
+    retrace = snapshot.get("large_retrace_count") or 0
+    prev_limit_feedback = snapshot.get("prev_limit_up_next_close_pct")
+    chinext_broken = snapshot.get("chinext_broken_limit_count") or 0
+
+    risks = []
+    if broken >= 25:
+        risks.append("炸板数偏高")
+    if retrace >= 80:
+        risks.append("大回撤个股较多")
+    if prev_limit_feedback is not None and prev_limit_feedback < 0:
+        risks.append("创业板涨停次日反馈偏弱")
+    if chinext_broken >= 3:
+        risks.append("创业板炸板增加")
+
+    if not risks:
+        return "当前未出现特别突出的风险项，仍需结合个股与题材强弱继续判断。"
+    return "，".join(risks) + "。"
+
+
+
 def _section_header(title: str) -> dict[str, Any]:
     return {"tag": "markdown", "content": f"**{title}**"}
 
