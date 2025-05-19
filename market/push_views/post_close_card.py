@@ -4,6 +4,14 @@ from typing import Any
 
 import pandas as pd
 
+def enrich_post_close_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
+    """给盘后快照补上一句总结和一条风险提示。"""
+    result = dict(snapshot)
+    result["summary_text"] = build_summary_text(result)
+    result["risk_text"] = build_risk_text(result)
+    return result
+
+
 def build_post_close_card(snapshot: dict[str, Any]) -> dict[str, Any]:
     """构造飞书 interactive card。"""
     title = f"{snapshot.get('date') or '-'} 盘后复盘卡片"
@@ -108,6 +116,41 @@ def build_risk_text(snapshot: dict[str, Any]) -> str:
         return "当前未出现特别突出的风险项，仍需结合个股与题材强弱继续判断。"
     return "，".join(risks) + "。"
 
+
+
+def _to_text(value: Any) -> str | None:
+    if value is None or (isinstance(value, float) and pd.isna(value)):
+        return None
+    text = str(value).strip()
+    return text or None
+
+
+def _to_number(value: Any, digits: int = 2) -> float | int | None:
+    if value is None or (isinstance(value, float) and pd.isna(value)):
+        return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    if digits == 0:
+        return int(round(number))
+    return round(number, digits)
+
+
+def _fmt(value: Any, digits: int = 2, suffix: str = "") -> str:
+    if value is None:
+        return "-"
+    if isinstance(value, int):
+        return f"{value}{suffix}"
+    if isinstance(value, float):
+        return f"{value:.{digits}f}{suffix}"
+    return f"{value}{suffix}"
+
+
+def _stock_value(stock: Any, value: Any, suffix: str = "%") -> str:
+    stock_text = stock or "-"
+    value_text = _fmt(value, suffix=suffix)
+    return f"{stock_text} | {value_text}"
 
 
 def _section_header(title: str) -> dict[str, Any]:
