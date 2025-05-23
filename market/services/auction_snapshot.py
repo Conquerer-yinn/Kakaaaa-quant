@@ -65,3 +65,48 @@ def build_auction_snapshot_from_raw(trade_date: str) -> dict[str, Any]:
 
 
 
+def _build_auction_market_df(
+    auction_df: pd.DataFrame,
+    previous_daily_df: pd.DataFrame,
+    stk_limit_df: pd.DataFrame,
+    stock_basic_df: pd.DataFrame,
+) -> pd.DataFrame:
+    if auction_df is None or auction_df.empty:
+        # 竞价结果有时会为空，这里仍然返回带标准列的空表，避免上层继续取列时报 KeyError。
+        return pd.DataFrame(
+            columns=[
+                "ts_code",
+                "close",
+                "amount",
+                "prev_close",
+                "name",
+                "up_limit",
+                "down_limit",
+                "auction_pct",
+                "is_limit_up",
+                "is_limit_down",
+            ]
+        )
+
+    merged_df = auction_df.copy()
+    previous_daily_df = previous_daily_df[["ts_code", "close"]].rename(columns={"close": "prev_close"})
+    merged_df = merged_df.merge(previous_daily_df, on="ts_code", how="left")
+    merged_df = merged_df.merge(stock_basic_df[["ts_code", "name"]], on="ts_code", how="left")
+
+    if stk_limit_df is not None and not stk_limit_df.empty:
+        merged_df = merged_df.merge(
+            stk_limit_df[["ts_code", "up_limit", "down_limit"]],
+            on="ts_code",
+            how="left",
+        )
+    else:
+        merged_df["up_limit"] = None
+        merged_df["down_limit"] = None
+
+    merged_df["auction_pct"] = ((merged_df["close"] / merged_df["prev_close"]) - 1) * 100
+    merged_df["is_limit_up"] = (merged_df["up_limit"].notna()) & (merged_df["close"] >= merged_df["up_limit"] - 1e-6)
+    merged_df["is_limit_down"] = (merged_df["down_limit"].notna()) & (merged_df["close"] <= merged_df["down_limit"] + 1e-6)
+    return merged_df
+
+
+
