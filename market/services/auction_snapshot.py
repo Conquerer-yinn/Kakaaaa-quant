@@ -110,3 +110,21 @@ def _build_auction_market_df(
 
 
 
+def _build_index_open_snapshot(engine: TushareDataEngine, trade_date: str) -> dict[str, float | None]:
+    snapshot = {}
+    for key, ts_code in INDEX_CODES.items():
+        daily_df = engine.get_index_daily(ts_code=ts_code, trade_date=trade_date)
+        if daily_df is None or daily_df.empty:
+            snapshot[f"{key}_index_pct"] = None
+            continue
+        row = daily_df.iloc[0]
+        pre_close = row.get("pre_close")
+        open_price = row.get("open")
+        if pre_close in (None, 0) or open_price is None:
+            snapshot[f"{key}_index_pct"] = None
+            continue
+        snapshot[f"{key}_index_pct"] = _to_number((float(open_price) / float(pre_close) - 1) * 100)
+    return snapshot
+
+
+
