@@ -128,3 +128,21 @@ def _build_index_open_snapshot(engine: TushareDataEngine, trade_date: str) -> di
 
 
 
+def _format_rank_list(df: pd.DataFrame, sort_column: str, percent_column: str | None = None, top_n: int = 5) -> str:
+    if df is None or df.empty or sort_column not in df.columns:
+        return "-"
+
+    top_df = df.sort_values(sort_column, ascending=False).head(top_n)
+    items = []
+    for _, row in top_df.iterrows():
+        name = row.get("name") or row.get("ts_code") or "-"
+        amount = _to_number((row.get(sort_column) or 0) / 1e8)
+        if percent_column and pd.notna(row.get(percent_column)):
+            pct = _to_number(row.get(percent_column))
+            items.append(f"{name} {amount:.2f}亿 {pct:+.2f}%")
+        else:
+            items.append(f"{name} {amount:.2f}亿")
+    return "；".join(items) if items else "-"
+
+
+
