@@ -65,6 +65,40 @@ def build_auction_snapshot_from_raw(trade_date: str) -> dict[str, Any]:
 
 
 
+def build_auction_summary_text(snapshot: dict[str, Any]) -> str:
+    """生成竞价卡片的一句话总结。"""
+    up_count = snapshot.get("up_count") or 0
+    down_count = snapshot.get("down_count") or 0
+    limit_up_count = snapshot.get("limit_up_count") or 0
+    limit_down_count = snapshot.get("limit_down_count") or 0
+    chinext_index_pct = snapshot.get("chinext_index_pct")
+
+    parts = []
+    if up_count > down_count * 1.2:
+        parts.append("竞价整体偏强")
+    elif down_count > up_count * 1.2:
+        parts.append("竞价整体偏弱")
+    else:
+        parts.append("竞价整体中性")
+
+    if limit_up_count >= 15:
+        parts.append("涨停前排活跃")
+    elif limit_up_count <= 3:
+        parts.append("竞价封板偏少")
+
+    if limit_down_count >= 5:
+        parts.append("跌停端有压力")
+
+    if chinext_index_pct is not None:
+        if chinext_index_pct >= 1:
+            parts.append("创业板竞价偏强")
+        elif chinext_index_pct <= -1:
+            parts.append("创业板竞价承压")
+
+    return "，".join(parts)
+
+
+
 def _build_auction_market_df(
     auction_df: pd.DataFrame,
     previous_daily_df: pd.DataFrame,
