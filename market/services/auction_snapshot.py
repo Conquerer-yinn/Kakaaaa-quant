@@ -180,3 +180,16 @@ def _format_rank_list(df: pd.DataFrame, sort_column: str, percent_column: str | 
 
 
 
+def _build_calendar_start(trade_date: str) -> str:
+    start_dt = datetime.strptime(trade_date, "%Y%m%d")
+    return (start_dt - timedelta(days=CALENDAR_BUFFER_DAYS)).strftime("%Y%m%d")
+
+
+
+def _to_number(value: Any, digits: int = 2) -> float | None:
+    if value is None or (isinstance(value, float) and pd.isna(value)):
+        return None
+    try:
+        return round(float(value), digits)
+    except (TypeError, ValueError):
+        return None
