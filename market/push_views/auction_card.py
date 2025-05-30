@@ -38,3 +38,32 @@ def build_auction_card(snapshot: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _section_header(title: str) -> dict[str, Any]:
+    return {"tag": "markdown", "content": f"**{title}**"}
+
+
+def _markdown_block(text: str) -> dict[str, Any]:
+    return {"tag": "markdown", "content": text}
+
+
+def _fields(items: list[tuple[str, str]]) -> dict[str, Any]:
+    return {
+        "tag": "div",
+        "fields": [
+            {
+                "is_short": True,
+                "text": {"tag": "lark_md", "content": f"**{label}**\n{value}"},
+            }
+            for label, value in items
+        ],
+    }
+
+
+def _fmt(value: Any, digits: int = 2, suffix: str = "") -> str:
+    if value is None:
+        return "-"
+    if isinstance(value, int):
+        return f"{value}{suffix}"
+    if isinstance(value, float):
+        return f"{value:.{digits}f}{suffix}"
+    return f"{value}{suffix}"
