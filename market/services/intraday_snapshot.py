@@ -63,3 +63,24 @@ def build_intraday_snapshot_from_raw(trade_date: str | None = None) -> dict[str,
     return snapshot
 
 
+def _build_index_snapshot(index_df: pd.DataFrame) -> dict[str, Any]:
+    snapshot = {"time_point": None}
+    for ts_code, field_name in INDEX_CODE_MAP.items():
+        row_df = index_df[index_df["ts_code"] == ts_code]
+        if row_df.empty:
+            snapshot[field_name] = None
+            continue
+        row = row_df.iloc[0]
+        pre_close = row.get("pre_close")
+        close = row.get("close")
+        if pre_close in (None, 0) or close is None:
+            snapshot[field_name] = None
+        else:
+            snapshot[field_name] = round((float(close) / float(pre_close) - 1) * 100, 2)
+
+        trade_time = row.get("trade_time")
+        if trade_time:
+            snapshot["time_point"] = str(trade_time)[11:16]
+    return snapshot
+
+
