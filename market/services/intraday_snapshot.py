@@ -84,3 +84,46 @@ def _build_index_snapshot(index_df: pd.DataFrame) -> dict[str, Any]:
     return snapshot
 
 
+def _try_fill_realtime_market_snapshot(engine: TushareDataEngine, snapshot: dict[str, Any]) -> str:
+    # 实时全市场快照权限波动较大，这里按“能取到就补，取不到就降级”的思路处理。
+    try:
+        rt_df = engine.get_realtime_stock_quotes()
+    except Exception as exc:
+        return f"当前盘中卡片先用指数口径构造；全市场实时宽度未接入，原因：{exc}"
+
+    if rt_df is None or rt_df.empty:
+        return "当前盘中卡片先用指数口径构造；全市场实时宽度返回为空。"
+
+    required_columns = {"ts_code", "close", "pre_close", "amount", "high"}
+    if not required_columns.issubset(set(rt_df.columns)):
+        return "当前盘中卡片先用指数口径构造；实时股票快照字段不足，未展开宽度统计。"
+
+    today = snapshot["date"]
+    stk_limit_df = engine.get_stk_limit(today)
+
+    market_df = rt_df.copy()
+    market_df["pct_chg"] = ((market_df["close"] / market_df["pre_close"]) - 1) * 100
+    snapshot["up_count"] = int((market_df["pct_chg"] > 0).sum())
+    snapshot["down_count"] = int((market_df["pct_chg"] < 0).sum())
+    snapshot["estimated_turnover_yi"] = _estimate_full_day_turnover(market_df["amount"].sum())
+
+    if stk_limit_df is not None and not stk_limit_df.empty:
+        market_df = market_df.merge(
+            stk_limit_df[["ts_code", "up_limit", "down_limit"]],
+            on="ts_code",
+            how="left",
+        )
+        market_df["is_limit_up"] = (market_df["up_limit"].notna()) & (market_df["close"] >= market_df["up_limit"] - 1e-6)
+        market_df["is_limit_down"] = (market_df["down_limit"].notna()) & (market_df["close"] <= market_df["down_limit"] + 1e-6)
+        market_df["is_broken_limit"] = (
+            market_df["up_limit"].notna()
+            & (market_df["high"] >= market_df["up_limit"] - 1e-6)
+            & (market_df["close"] < market_df["up_limit"] - 1e-6)
+        )
+        snapshot["limit_up_count"] = int(market_df["is_limit_up"].sum())
+        snapshot["limit_down_count"] = int(market_df["is_limit_down"].sum())
+        snapshot["broken_limit_count"] = int(market_df["is_broken_limit"].sum())
+
+    return "当前盘中卡片已接入实时指数；全市场实时宽度为尽力统计，若权限受限会自动降级。"
+
+
