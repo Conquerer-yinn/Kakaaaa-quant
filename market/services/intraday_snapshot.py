@@ -84,6 +84,23 @@ def _build_index_snapshot(index_df: pd.DataFrame) -> dict[str, Any]:
     return snapshot
 
 
+def _build_index_fallback(engine: TushareDataEngine, trade_date: str) -> dict[str, Any]:
+    snapshot = {"time_point": datetime.now().strftime("%H:%M")}
+    for ts_code, field_name in INDEX_CODE_MAP.items():
+        daily_df = engine.get_index_daily(ts_code=ts_code, trade_date=trade_date)
+        if daily_df is None or daily_df.empty:
+            snapshot[field_name] = None
+            continue
+        row = daily_df.iloc[0]
+        pre_close = row.get("pre_close")
+        close = row.get("close")
+        if pre_close in (None, 0) or close is None:
+            snapshot[field_name] = None
+        else:
+            snapshot[field_name] = round((float(close) / float(pre_close) - 1) * 100, 2)
+    return snapshot
+
+
 def _try_fill_realtime_market_snapshot(engine: TushareDataEngine, snapshot: dict[str, Any]) -> str:
     # 实时全市场快照权限波动较大，这里按“能取到就补，取不到就降级”的思路处理。
     try:
