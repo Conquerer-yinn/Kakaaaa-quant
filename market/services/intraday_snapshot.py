@@ -144,3 +144,34 @@ def _try_fill_realtime_market_snapshot(engine: TushareDataEngine, snapshot: dict
     return "当前盘中卡片已接入实时指数；全市场实时宽度为尽力统计，若权限受限会自动降级。"
 
 
+def _estimate_full_day_turnover(total_amount_k: Any) -> float | None:
+    if total_amount_k is None:
+        return None
+    try:
+        total_amount_k = float(total_amount_k)
+    except (TypeError, ValueError):
+        return None
+
+    now = datetime.now()
+    elapsed_ratio = _session_elapsed_ratio(now.hour * 60 + now.minute)
+    if elapsed_ratio <= 0:
+        return None
+    return round((total_amount_k / 1e5) / elapsed_ratio, 2)
+
+
+def _session_elapsed_ratio(total_minutes: int) -> float:
+    # A 股交易时段按 240 分钟估算，午休不计。
+    morning_start = 9 * 60 + 30
+    morning_end = 11 * 60 + 30
+    afternoon_start = 13 * 60
+    afternoon_end = 15 * 60
+
+    if total_minutes <= morning_start:
+        return 0
+    if total_minutes <= morning_end:
+        return (total_minutes - morning_start) / 240
+    if total_minutes <= afternoon_start:
+        return 120 / 240
+    if total_minutes <= afternoon_end:
+        return (120 + total_minutes - afternoon_start) / 240
+    return 1
