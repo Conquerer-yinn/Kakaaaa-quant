@@ -63,6 +63,61 @@ def build_intraday_snapshot_from_raw(trade_date: str | None = None) -> dict[str,
     return snapshot
 
 
+def build_intraday_style_text(snapshot: dict[str, Any]) -> str:
+    """生成盘中节奏判断。"""
+    chinext_pct = snapshot.get("chinext_index_pct")
+    sse_pct = snapshot.get("sse_index_pct")
+    up_count = snapshot.get("up_count")
+    down_count = snapshot.get("down_count")
+
+    parts = []
+    if up_count is not None and down_count is not None:
+        if up_count > down_count * 1.3:
+            parts.append("市场呈现普涨节奏")
+        elif down_count > up_count * 1.3:
+            parts.append("市场整体承压")
+        else:
+            parts.append("市场分歧偏均衡")
+    elif sse_pct is not None:
+        if sse_pct >= 1:
+            parts.append("指数端走强")
+        elif sse_pct <= -1:
+            parts.append("指数端偏弱")
+        else:
+            parts.append("指数端中性震荡")
+
+    if chinext_pct is not None:
+        if chinext_pct >= 1:
+            parts.append("创业板领涨")
+        elif chinext_pct <= -1:
+            parts.append("创业板承压")
+
+    estimated_turnover_yi = snapshot.get("estimated_turnover_yi")
+    if estimated_turnover_yi is not None:
+        parts.append(f"按当前节奏预计成交额约 {estimated_turnover_yi:.0f} 亿")
+
+    return "，".join(parts)
+
+
+def build_intraday_risk_text(snapshot: dict[str, Any]) -> str:
+    """生成盘中风险提示。"""
+    risks = []
+    limit_down_count = snapshot.get("limit_down_count")
+    broken_limit_count = snapshot.get("broken_limit_count")
+    chinext_pct = snapshot.get("chinext_index_pct")
+
+    if limit_down_count is not None and limit_down_count >= 10:
+        risks.append("跌停家数增加")
+    if broken_limit_count is not None and broken_limit_count >= 10:
+        risks.append("炸板明显增多")
+    if chinext_pct is not None and chinext_pct <= -1:
+        risks.append("创业板回落较快")
+
+    if not risks:
+        return "当前未出现特别突出的盘中风险项，继续观察高位股承接和炸板变化。"
+    return "，".join(risks) + "。"
+
+
 def _build_index_snapshot(index_df: pd.DataFrame) -> dict[str, Any]:
     snapshot = {"time_point": None}
     for ts_code, field_name in INDEX_CODE_MAP.items():
