@@ -18,6 +18,16 @@ class TaskMetadata(BaseModel):
     output_target: str = Field(..., description="默认输出目标")
 
 
+class HealthResponse(BaseModel):
+    status: str
+    service: str
+    available_task_count: int
+
+
+class TaskListResponse(BaseModel):
+    tasks: list[TaskMetadata]
+
+
 TaskExecutionStatus = Literal["pending", "running", "cancelling", "cancelled", "succeeded", "failed"]
 
 
