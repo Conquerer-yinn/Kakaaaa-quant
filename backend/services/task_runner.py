@@ -49,3 +49,42 @@ def run_daily_basics_task(request: DailyBasicsRunRequest) -> TaskRunResponse:
 
 
 
+def run_market_sentiment_task(request: MarketSentimentRunRequest) -> TaskRunResponse:
+    metadata = get_task_metadata("market-sentiment")
+    params = request.model_dump()
+    output_target = resolve_market_sentiment_target(request)
+
+    try:
+        output_path = run_market_sentiment(
+            start_date=request.start_date,
+            end_date=request.end_date,
+            output_file=request.output_file,
+            history_mode=request.history,
+        )
+        return build_task_run_response(
+            metadata=metadata,
+            params=params,
+            output_target=output_target,
+            output_path=output_path,
+            error_message=None if output_path is not None else "任务未产生新数据或无需更新。",
+        )
+    except Exception as exc:
+        return build_task_run_response(
+            metadata=metadata,
+            params=params,
+            output_target=output_target,
+            output_path=None,
+            error_message=str(exc),
+        )
+
+
+
+def resolve_market_sentiment_target(request: MarketSentimentRunRequest) -> str:
+    if request.output_file:
+        return request.output_file
+
+    if request.history:
+        latest_history = find_latest_history_workbook()
+        return latest_history.file_name if latest_history is not None else "历史数据_待初始化.xlsx"
+
+    return "测试数据_待生成.xlsx"
