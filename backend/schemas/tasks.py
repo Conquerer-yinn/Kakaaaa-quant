@@ -55,3 +55,23 @@ class TaskRunResponse(BaseModel):
 TaskExecutionStatus = Literal["pending", "running", "cancelling", "cancelled", "succeeded", "failed"]
 
 
+class BackgroundTaskStatusResponse(BaseModel):
+    task_id: str
+    task_name: str
+    task_type: str
+    description: str
+    status: TaskExecutionStatus
+    params: dict[str, Any]
+    output_target: str
+    progress_message: str | None = None
+    error_message: str | None = None
+    cancel_requested: bool = False
+    created_at: str
+    started_at: str | None = None
+    finished_at: str | None = None
+    result: TaskRunResponse | None = None
+
+
+class BackgroundTaskStartResponse(BackgroundTaskStatusResponse):
+    created: bool = True
+
