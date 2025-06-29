@@ -66,6 +66,36 @@ class MarketSentimentTaskManager:
             task.future = self._executor.submit(self._run_task, task.task_id, request)
             return BackgroundTaskStartResponse(created=True, **self._serialize_task_locked(task).model_dump())
 
+    def get_task(self, task_id: str) -> BackgroundTaskStatusResponse:
+        with self._lock:
+            task = self._get_task_locked(task_id)
+            return self._serialize_task_locked(task)
+
+    def _get_task_locked(self, task_id: str) -> ManagedTask:
+        task = self._tasks.get(task_id)
+        if task is None:
+            raise KeyError(task_id)
+        return task
+
+    def _serialize_task_locked(self, task: ManagedTask) -> BackgroundTaskStatusResponse:
+        return BackgroundTaskStatusResponse(
+            task_id=task.task_id,
+            task_name=task.task_name,
+            task_type=task.task_type,
+            description=task.description,
+            status=task.status,
+            params=task.params,
+            output_target=task.output_target,
+            progress_message=task.progress_message,
+            error_message=task.error_message,
+            cancel_requested=task.cancel_requested,
+            created_at=task.created_at,
+            started_at=task.started_at,
+            finished_at=task.finished_at,
+            result=task.result,
+        )
+
+
 market_sentiment_task_manager = MarketSentimentTaskManager()
 
 
