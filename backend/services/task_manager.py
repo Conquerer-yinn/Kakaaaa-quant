@@ -71,6 +71,19 @@ class MarketSentimentTaskManager:
             task = self._get_task_locked(task_id)
             return self._serialize_task_locked(task)
 
+    def cancel_task(self, task_id: str) -> BackgroundTaskStatusResponse:
+        with self._lock:
+            task = self._get_task_locked(task_id)
+            if task.status in {"succeeded", "failed", "cancelled"}:
+                return self._serialize_task_locked(task)
+
+            task.cancel_requested = True
+            task.cancel_event.set()
+            if task.status != "cancelled":
+                task.status = "cancelling"
+            task.progress_message = "已收到取消请求，等待当前步骤安全结束。"
+            return self._serialize_task_locked(task)
+
     def _get_task_locked(self, task_id: str) -> ManagedTask:
         task = self._tasks.get(task_id)
         if task is None:
