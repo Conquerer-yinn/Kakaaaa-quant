@@ -84,6 +84,64 @@ class MarketSentimentTaskManager:
             task.progress_message = "已收到取消请求，等待当前步骤安全结束。"
             return self._serialize_task_locked(task)
 
+    def _run_task(self, task_id: str, request: MarketSentimentRunRequest) -> None:
+        with self._lock:
+            task = self._get_task_locked(task_id)
+            task.status = "running"
+            task.started_at = _now_iso()
+            task.progress_message = "market-sentiment 正在后台更新。"
+
+        try:
+            output_path = run_market_sentiment(
+                start_date=request.start_date,
+                end_date=request.end_date,
+                output_file=resolve_market_sentiment_target(request),
+                history_mode=request.history,
+                should_cancel=task.cancel_event.is_set,
+            )
+            result = build_task_run_response(
+                metadata=get_task_metadata("market-sentiment"),
+                params=request.model_dump(),
+                output_target=resolve_market_sentiment_target(request),
+                output_path=output_path,
+                error_message=None if output_path is not None else "任务未产生新数据或无需更新。",
+            )
+            with self._lock:
+                task = self._get_task_locked(task_id)
+                task.result = result
+                task.status = "succeeded"
+                task.error_message = result.error_message
+                task.progress_message = "market-sentiment 已执行完成。" if result.success else (result.error_message or "market-sentiment 已执行完成。")
+                task.finished_at = _now_iso()
+        except TaskCancelledError as exc:
+            with self._lock:
+                task = self._get_task_locked(task_id)
+                task.status = "cancelled"
+                task.error_message = str(exc)
+                task.progress_message = "market-sentiment 已取消。"
+                task.finished_at = _now_iso()
+                task.result = build_task_run_response(
+                    metadata=get_task_metadata("market-sentiment"),
+                    params=request.model_dump(),
+                    output_target=resolve_market_sentiment_target(request),
+                    output_path=None,
+                    error_message=str(exc),
+                )
+        except Exception as exc:
+            with self._lock:
+                task = self._get_task_locked(task_id)
+                task.status = "failed"
+                task.error_message = str(exc)
+                task.progress_message = "market-sentiment 执行失败。"
+                task.finished_at = _now_iso()
+                task.result = build_task_run_response(
+                    metadata=get_task_metadata("market-sentiment"),
+                    params=request.model_dump(),
+                    output_target=resolve_market_sentiment_target(request),
+                    output_path=None,
+                    error_message=str(exc),
+                )
+
     def _get_task_locked(self, task_id: str) -> ManagedTask:
         task = self._tasks.get(task_id)
         if task is None:
