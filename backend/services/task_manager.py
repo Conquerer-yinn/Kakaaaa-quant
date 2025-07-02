@@ -142,6 +142,12 @@ class MarketSentimentTaskManager:
                     error_message=str(exc),
                 )
 
+    def _find_active_task_locked(self, task_name: str) -> ManagedTask | None:
+        for task in self._tasks.values():
+            if task.task_name == task_name and task.status in ACTIVE_TASK_STATUSES:
+                return task
+        return None
+
     def _get_task_locked(self, task_id: str) -> ManagedTask:
         task = self._tasks.get(task_id)
         if task is None:
