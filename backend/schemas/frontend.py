@@ -26,3 +26,19 @@ class DashboardSummaryResponse(BaseModel):
     quick_links: list[SummaryLink]
 
 
+class HistorySectionResponse(BaseModel):
+    key: str = Field(..., description="前端内部使用的分区键。")
+    title: str = Field(..., description="展示标题。")
+    columns: list[str] = Field(default_factory=list, description="表格列名。")
+    rows: list[dict[str, Any]] = Field(default_factory=list, description="数据行。")
+
+
+class HistoryDatasetResponse(BaseModel):
+    success: bool
+    dataset: str
+    file_name: str | None = None
+    updated_at: str | None = None
+    sections: list[HistorySectionResponse] = Field(default_factory=list)
+    error_message: str | None = None
+
+
