@@ -65,3 +65,53 @@ def build_dashboard_summary() -> DashboardSummaryResponse:
 
 
 
+def build_market_sentiment_history(limit: int = DEFAULT_HISTORY_LIMIT) -> HistoryDatasetResponse:
+    """历史页只返回 market-sentiment 三个核心 sheet，并过滤前端不需要的冗余列。"""
+    file_name = _resolve_market_sentiment_file()
+    if not file_name:
+        return HistoryDatasetResponse(
+            success=False,
+            dataset="market-sentiment",
+            file_name="",
+            updated_at=None,
+            sections=[],
+            error_message="当前未找到可展示的市场情绪历史主表，请先运行 market-sentiment 更新任务。",
+        )
+
+    sections: list[HistorySectionResponse] = []
+    for key, title, sheet_name in (
+        ("market_overview", "总市场数据", MARKET_SENTIMENT_MARKET_SHEET),
+        ("height_observation", "高度观察", MARKET_SENTIMENT_HEIGHT_SHEET),
+        ("chinext_sentiment", "创业板专区", MARKET_SENTIMENT_CHINEXT_SHEET),
+    ):
+        section = _build_history_section(
+            key=key,
+            title=title,
+            file_name=file_name,
+            sheet_name=sheet_name,
+            limit=limit,
+        )
+        if section is not None:
+            sections.append(section)
+
+    if not sections:
+        return HistoryDatasetResponse(
+            success=False,
+            dataset="market-sentiment",
+            file_name=file_name,
+            updated_at=_get_file_updated_at(file_name),
+            sections=[],
+            error_message="当前未找到可展示的市场情绪历史主表，请先运行 market-sentiment 更新任务。",
+        )
+
+    return HistoryDatasetResponse(
+        success=True,
+        dataset="market-sentiment",
+        file_name=file_name,
+        updated_at=_get_file_updated_at(file_name),
+        sections=sections,
+        error_message=None,
+    )
+
+
+
