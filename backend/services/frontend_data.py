@@ -115,3 +115,35 @@ def build_market_sentiment_history(limit: int = DEFAULT_HISTORY_LIMIT) -> Histor
 
 
 
+def _build_history_section(
+    key: str,
+    title: str,
+    file_name: str,
+    sheet_name: str,
+    limit: int,
+) -> HistorySectionResponse | None:
+    df = ExcelHelper.read_sheet(file_name, sheet_name)
+    if df is None or df.empty:
+        return None
+
+    display_columns = _pick_display_columns(df.columns.tolist())
+    preview_df = df[display_columns].tail(limit).copy().reset_index(drop=True)
+    preview_df = preview_df.where(preview_df.notna(), None)
+    return HistorySectionResponse(
+        key=key,
+        title=title,
+        columns=[str(column) for column in preview_df.columns.tolist()],
+        rows=preview_df.to_dict(orient="records"),
+    )
+
+
+
+def _pick_display_columns(columns: list[str]) -> list[str]:
+    return [
+        str(column)
+        for column in columns
+        if "位置" not in str(column) and "相对中枢" not in str(column)
+    ]
+
+
+
