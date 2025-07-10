@@ -147,3 +147,19 @@ def _pick_display_columns(columns: list[str]) -> list[str]:
 
 
 
+def _resolve_market_sentiment_file() -> str:
+    latest_history = find_latest_history_workbook()
+    if latest_history is not None:
+        return latest_history.file_name
+    return ""
+
+
+
+def _get_file_updated_at(file_name: str) -> str | None:
+    if not file_name:
+        return None
+    file_path = ExcelHelper.build_master_path(file_name)
+    if not os.path.exists(file_path):
+        return None
+    return datetime.fromtimestamp(os.path.getmtime(file_path)).strftime("%Y-%m-%d %H:%M:%S")
+
