@@ -1,5 +1,9 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
+from backend.schemas.frontend import (
+    DashboardSummaryResponse,
+    HistoryDatasetResponse,
+)
 from backend.schemas.tasks import (
     BackgroundTaskStartResponse,
     BackgroundTaskStatusResponse,
@@ -9,6 +13,7 @@ from backend.schemas.tasks import (
     TaskListResponse,
     TaskRunResponse,
 )
+from backend.services.frontend_data import build_dashboard_summary, build_market_sentiment_history
 from backend.services.task_manager import market_sentiment_task_manager
 from backend.services.task_registry import list_task_metadata
 from backend.services.task_runner import run_daily_basics_task
@@ -30,6 +35,17 @@ def health_check():
 @router.get("/tasks", response_model=TaskListResponse, tags=["tasks"])
 def get_tasks():
     return TaskListResponse(tasks=list_task_metadata())
+
+
+@router.get("/dashboard/summary", response_model=DashboardSummaryResponse, tags=["frontend"])
+def get_dashboard_summary():
+    # 首页目前只消费静态定位信息和已落地能力，不把后端做成复杂概览平台。
+    return build_dashboard_summary()
+
+
+@router.get("/market/history/market-sentiment", response_model=HistoryDatasetResponse, tags=["frontend"])
+def get_market_sentiment_history(limit: int = Query(default=20, ge=10, le=120)):
+    return build_market_sentiment_history(limit=limit)
 
 
 @router.post("/tasks/daily-basics/run", response_model=TaskRunResponse, tags=["tasks"])
