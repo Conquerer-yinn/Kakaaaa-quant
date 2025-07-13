@@ -42,3 +42,41 @@ class HistoryDatasetResponse(BaseModel):
     error_message: str | None = None
 
 
+class PushCardRequest(BaseModel):
+    trade_date: str | None = Field(default=None, description="可选，手动指定 YYYYMMDD。")
+
+
+class PushCardSendRequest(PushCardRequest):
+    webhook: str | None = Field(default=None, description="可选，手动覆盖默认 webhook。")
+
+
+class PushCardItemResponse(BaseModel):
+    success: bool
+    card_type: str
+    title: str
+    status: str
+    status_label: str
+    date: str | None = None
+    snapshot: dict[str, Any] = Field(default_factory=dict)
+    card_payload: dict[str, Any] | None = None
+    error_message: str | None = None
+
+
+class PushCardListResponse(BaseModel):
+    success: bool
+    cards: list[PushCardItemResponse] = Field(default_factory=list)
+    error_message: str | None = None
+
+
+class PushCardActionResponse(BaseModel):
+    success: bool
+    action: str
+    card_type: str
+    title: str
+    status: str
+    status_label: str
+    date: str | None = None
+    snapshot: dict[str, Any] = Field(default_factory=dict)
+    card_payload: dict[str, Any] | None = None
+    send_response: dict[str, Any] | None = None
+    error_message: str | None = None
