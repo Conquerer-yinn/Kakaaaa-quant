@@ -64,6 +64,64 @@ def build_push_card_preview(card_type: str, trade_date: str | None = None) -> Pu
 
 
 
+def refresh_push_card(card_type: str, trade_date: str | None = None) -> PushCardActionResponse:
+    preview = build_push_card_preview(card_type=card_type, trade_date=trade_date)
+    return PushCardActionResponse(
+        success=preview.success,
+        action="refresh",
+        card_type=preview.card_type,
+        title=preview.title,
+        status=preview.status,
+        status_label=preview.status_label,
+        date=preview.date,
+        snapshot=preview.snapshot,
+        card_payload=preview.card_payload,
+        send_response=None,
+        error_message=preview.error_message,
+    )
+
+
+
+def send_push_card(card_type: str, trade_date: str | None = None, webhook: str | None = None) -> PushCardActionResponse:
+    meta = CARD_META[card_type]
+    try:
+        snapshot, card_payload = _build_snapshot_and_card(card_type, trade_date)
+        resolved_webhook = webhook or FEISHU_BOT_WEBHOOK
+        if not resolved_webhook:
+            raise ValueError("Missing Feishu webhook. Please set FEISHU_BOT_WEBHOOK before sending cards.")
+
+        notifier = FeishuNotifier(resolved_webhook)
+        send_response = notifier.send_interactive_card(card_payload)
+        return PushCardActionResponse(
+            success=True,
+            action="send",
+            card_type=card_type,
+            title=meta["title"],
+            status=meta["status"],
+            status_label=meta["status_label"],
+            date=snapshot.get("date"),
+            snapshot=snapshot,
+            card_payload=card_payload,
+            send_response=send_response,
+            error_message=None,
+        )
+    except Exception as exc:
+        return PushCardActionResponse(
+            success=False,
+            action="send",
+            card_type=card_type,
+            title=meta["title"],
+            status=meta["status"],
+            status_label=meta["status_label"],
+            date=trade_date,
+            snapshot={},
+            card_payload=None,
+            send_response=None,
+            error_message=str(exc),
+        )
+
+
+
 def _build_snapshot_and_card(card_type: str, trade_date: str | None) -> tuple[dict[str, Any], dict[str, Any]]:
     """统一封装三类卡片，避免路由层分别处理数据链和发送链。"""
     if card_type == "post-close":
