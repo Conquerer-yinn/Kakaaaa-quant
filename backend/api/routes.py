@@ -3,6 +3,10 @@ from fastapi import APIRouter, HTTPException, Query
 from backend.schemas.frontend import (
     DashboardSummaryResponse,
     HistoryDatasetResponse,
+    PushCardActionResponse,
+    PushCardListResponse,
+    PushCardRequest,
+    PushCardSendRequest,
 )
 from backend.schemas.tasks import (
     BackgroundTaskStartResponse,
@@ -14,6 +18,7 @@ from backend.schemas.tasks import (
     TaskRunResponse,
 )
 from backend.services.frontend_data import build_dashboard_summary, build_market_sentiment_history
+from backend.services.push_cards import list_push_cards, refresh_push_card, send_push_card
 from backend.services.task_manager import market_sentiment_task_manager
 from backend.services.task_registry import list_task_metadata
 from backend.services.task_runner import run_daily_basics_task
@@ -46,6 +51,41 @@ def get_dashboard_summary():
 @router.get("/market/history/market-sentiment", response_model=HistoryDatasetResponse, tags=["frontend"])
 def get_market_sentiment_history(limit: int = Query(default=20, ge=10, le=120)):
     return build_market_sentiment_history(limit=limit)
+
+
+@router.get("/market/push/cards", response_model=PushCardListResponse, tags=["frontend"])
+def get_push_cards():
+    return list_push_cards()
+
+
+@router.post("/market/push/post-close/refresh", response_model=PushCardActionResponse, tags=["frontend"])
+def refresh_post_close_card(request: PushCardRequest):
+    return refresh_push_card(card_type="post-close", trade_date=request.trade_date)
+
+
+@router.post("/market/push/post-close/send", response_model=PushCardActionResponse, tags=["frontend"])
+def send_post_close_card(request: PushCardSendRequest):
+    return send_push_card(card_type="post-close", trade_date=request.trade_date, webhook=request.webhook)
+
+
+@router.post("/market/push/auction/refresh", response_model=PushCardActionResponse, tags=["frontend"])
+def refresh_auction_card(request: PushCardRequest):
+    return refresh_push_card(card_type="auction", trade_date=request.trade_date)
+
+
+@router.post("/market/push/auction/send", response_model=PushCardActionResponse, tags=["frontend"])
+def send_auction_card(request: PushCardSendRequest):
+    return send_push_card(card_type="auction", trade_date=request.trade_date, webhook=request.webhook)
+
+
+@router.post("/market/push/intraday/refresh", response_model=PushCardActionResponse, tags=["frontend"])
+def refresh_intraday_card(request: PushCardRequest):
+    return refresh_push_card(card_type="intraday", trade_date=request.trade_date)
+
+
+@router.post("/market/push/intraday/send", response_model=PushCardActionResponse, tags=["frontend"])
+def send_intraday_card(request: PushCardSendRequest):
+    return send_push_card(card_type="intraday", trade_date=request.trade_date, webhook=request.webhook)
 
 
 @router.post("/tasks/daily-basics/run", response_model=TaskRunResponse, tags=["tasks"])
