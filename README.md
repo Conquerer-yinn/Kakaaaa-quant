@@ -53,3 +53,32 @@ Kaka_Quant/
 - 测试运行统一输出：`测试数据_起始日期_结束日期.xlsx`
 
 前端历史页固定读取最新历史主表里的最近 20 个交易日数据，不再单独展示 `daily-basics`。
+
+### 2. FastAPI 轻量服务层
+
+当前后端已经具备这些接口：
+
+#### 系统与任务
+
+- `GET /health`
+- `GET /tasks`
+- `POST /tasks/daily-basics/run`
+- `POST /tasks/market-sentiment/run`
+- `GET /tasks/market-sentiment/{task_id}`
+- `POST /tasks/market-sentiment/{task_id}/cancel`
+
+#### 前端读取接口
+
+- `GET /dashboard/summary`
+- `GET /market/history/market-sentiment`
+- `GET /market/push/cards`
+
+#### 卡片刷新与发送接口
+
+- `POST /market/push/post-close/refresh`
+- `POST /market/push/post-close/send`
+- `POST /market/push/auction/refresh`
+- `POST /market/push/auction/send`
+- `POST /market/push/intraday/refresh`
+- `POST /market/push/intraday/send`
+
