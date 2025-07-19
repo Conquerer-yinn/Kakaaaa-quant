@@ -50,3 +50,6 @@ storage/backups/
 # common/config.py
 
 storage/data_master/*.xlsx
+# Node / Frontend
+frontend/node_modules/
+frontend/dist/
