@@ -16,6 +16,16 @@ async function request(path, options = {}) {
   return data;
 }
 
-export const api = {};
+export const api = {
+  getDashboardSummary() {
+    return request("/dashboard/summary");
+  },
+  getMarketSentimentHistory(limit = 20) {
+    return request(`/market/history/market-sentiment?limit=${limit}`);
+  },
+  getPushCards() {
+    return request("/market/push/cards");
+  },
+};
 
 export { API_BASE_URL };
