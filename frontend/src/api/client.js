@@ -26,6 +26,33 @@ export const api = {
   getPushCards() {
     return request("/market/push/cards");
   },
+  startMarketSentimentTask(payload = {}) {
+    return request("/tasks/market-sentiment/run", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+  getMarketSentimentTask(taskId) {
+    return request(`/tasks/market-sentiment/${taskId}`);
+  },
+  cancelMarketSentimentTask(taskId) {
+    return request(`/tasks/market-sentiment/${taskId}/cancel`, {
+      method: "POST",
+      body: JSON.stringify({}),
+    });
+  },
+  refreshPushCard(cardType, tradeDate = null) {
+    return request(`/market/push/${cardType}/refresh`, {
+      method: "POST",
+      body: JSON.stringify({ trade_date: tradeDate }),
+    });
+  },
+  sendPushCard(cardType, tradeDate = null) {
+    return request(`/market/push/${cardType}/send`, {
+      method: "POST",
+      body: JSON.stringify({ trade_date: tradeDate }),
+    });
+  },
 };
 
 export { API_BASE_URL };
