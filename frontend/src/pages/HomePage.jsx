@@ -7,12 +7,13 @@ import { StatusBadge } from "../components/StatusBadge";
 
 export function HomePage() {
   const [summary, setSummary] = useState(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     api
       .getDashboardSummary()
       .then(setSummary)
-      .catch(() => {});
+      .catch((err) => setError(err.message));
   }, []);
 
   return (
@@ -34,6 +35,8 @@ export function HomePage() {
           </Link>
         </div>
       </section>
+
+      {error ? <div className="feedback error">首页概览读取失败：{error}</div> : null}
 
       <div className="grid-two">
         <SectionCard title="项目定位" subtitle="当前更像研究工作台，而不是重型量化平台。">
