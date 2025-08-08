@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { api } from "../api/client";
+import { DataTable } from "../components/DataTable";
 import { SectionCard } from "../components/SectionCard";
 
 export function HistoryPage() {
@@ -37,6 +38,18 @@ export function HistoryPage() {
 
       {error ? <div className="feedback error">历史数据读取失败：{error}</div> : null}
       {loading ? <div className="feedback info">正在读取最近 20 个交易日数据...</div> : null}
+
+      <div className="grid-two history-grid">
+        {(marketSentiment?.sections || []).map((section) => (
+          <SectionCard
+            key={section.key}
+            title={section.title}
+            subtitle={`展示最近 ${section.rows.length || 0} 个交易日真实数据。`}
+          >
+            <DataTable columns={section.columns} rows={section.rows} />
+          </SectionCard>
+        ))}
+      </div>
     </div>
   );
 }
