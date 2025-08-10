@@ -55,7 +55,7 @@ export function HistoryPage() {
         <div>
           <p className="eyebrow">指标设计 / 历史数据</p>
           <h2>这一页现在只保留 market-sentiment，并固定展示最近 20 个交易日。</h2>
-          <p>图表和表格直接共用同一份真实数据。图表默认显示第一项数值列。</p>
+          <p>图表和表格直接共用同一份真实数据。点击表头里的数值列，就能切换当前柱状图展示内容。</p>
         </div>
       </section>
 
@@ -80,7 +80,18 @@ export function HistoryPage() {
                   yKey={activeMetric}
                 />
               ) : null}
-              <DataTable columns={section.columns} rows={section.rows} />
+              <DataTable
+                columns={section.columns}
+                rows={section.rows}
+                activeColumn={activeMetric}
+                interactiveColumns={metricColumns}
+                onHeaderClick={(column) =>
+                  setSelectedMetrics((current) => ({
+                    ...current,
+                    [section.key]: column,
+                  }))
+                }
+              />
             </SectionCard>
           );
         })}
