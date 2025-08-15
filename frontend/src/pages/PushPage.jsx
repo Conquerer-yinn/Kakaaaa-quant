@@ -5,6 +5,12 @@ import { MetricGrid } from "../components/MetricGrid";
 import { SectionCard } from "../components/SectionCard";
 import { StatusBadge } from "../components/StatusBadge";
 
+const CARD_ENDPOINT_KEY = {
+  "post-close": "post-close",
+  auction: "auction",
+  intraday: "intraday",
+};
+
 const CARD_METRICS = {
   "post-close": [
     ["日期", "date"],
@@ -60,6 +66,21 @@ export function PushPage() {
     loadCards();
   }, []);
 
+  const handleAction = async (cardType) => {
+    setFeedback("");
+    try {
+      const result = await api.refreshPushCard(CARD_ENDPOINT_KEY[cardType]);
+      setFeedback(
+        result.success
+          ? `${result.title} 刷新成功`
+          : `${result.title} 刷新失败：${result.error_message}`
+      );
+      await loadCards();
+    } catch (err) {
+      setFeedback(err.message);
+    }
+  };
+
   return (
     <div className="page-stack">
       <section className="page-header">
@@ -81,7 +102,14 @@ export function PushPage() {
             subtitle={card.error_message || card.snapshot?.availability_note || "当前卡片可用于展示与手动触发发送。"}
             action={<StatusBadge status={card.status} label={card.status_label} />}
           >
-            <div className="timestamp-text">最近日期：{card.date || "-"}</div>
+            <div className="row-between mobile-stack">
+              <div className="button-row compact">
+                <button className="primary-button" onClick={() => handleAction(card.card_type)}>
+                  刷新最新内容
+                </button>
+              </div>
+              <div className="timestamp-text">最近日期：{card.date || "-"}</div>
+            </div>
 
             <MetricGrid items={buildMetricItems(card)} />
 
