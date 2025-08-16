@@ -66,14 +66,17 @@ export function PushPage() {
     loadCards();
   }, []);
 
-  const handleAction = async (cardType) => {
+  const handleAction = async (cardType, action) => {
     setFeedback("");
     try {
-      const result = await api.refreshPushCard(CARD_ENDPOINT_KEY[cardType]);
+      const result =
+        action === "refresh"
+          ? await api.refreshPushCard(CARD_ENDPOINT_KEY[cardType])
+          : await api.sendPushCard(CARD_ENDPOINT_KEY[cardType]);
       setFeedback(
         result.success
-          ? `${result.title} 刷新成功`
-          : `${result.title} 刷新失败：${result.error_message}`
+          ? `${result.title} ${action === "refresh" ? "刷新成功" : "发送成功"}`
+          : `${result.title} ${action === "refresh" ? "刷新失败" : "发送失败"}：${result.error_message}`
       );
       await loadCards();
     } catch (err) {
@@ -104,8 +107,11 @@ export function PushPage() {
           >
             <div className="row-between mobile-stack">
               <div className="button-row compact">
-                <button className="primary-button" onClick={() => handleAction(card.card_type)}>
+                <button className="primary-button" onClick={() => handleAction(card.card_type, "refresh")}>
                   刷新最新内容
+                </button>
+                <button className="ghost-button" onClick={() => handleAction(card.card_type, "send")}>
+                  发送到飞书
                 </button>
               </div>
               <div className="timestamp-text">最近日期：{card.date || "-"}</div>
