@@ -49,6 +49,7 @@ export function PushPage() {
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [feedback, setFeedback] = useState("");
+  const [actionLoading, setActionLoading] = useState("");
 
   const loadCards = async () => {
     setLoading(true);
@@ -67,6 +68,8 @@ export function PushPage() {
   }, []);
 
   const handleAction = async (cardType, action) => {
+    const loadingKey = `${cardType}-${action}`;
+    setActionLoading(loadingKey);
     setFeedback("");
     try {
       const result =
@@ -81,6 +84,8 @@ export function PushPage() {
       await loadCards();
     } catch (err) {
       setFeedback(err.message);
+    } finally {
+      setActionLoading(loadingKey);
     }
   };
 
@@ -107,11 +112,19 @@ export function PushPage() {
           >
             <div className="row-between mobile-stack">
               <div className="button-row compact">
-                <button className="primary-button" onClick={() => handleAction(card.card_type, "refresh")}>
-                  刷新最新内容
+                <button
+                  className="primary-button"
+                  onClick={() => handleAction(card.card_type, "refresh")}
+                  disabled={actionLoading === `${card.card_type}-refresh`}
+                >
+                  {actionLoading === `${card.card_type}-refresh` ? "刷新中..." : "刷新最新内容"}
                 </button>
-                <button className="ghost-button" onClick={() => handleAction(card.card_type, "send")}>
-                  发送到飞书
+                <button
+                  className="ghost-button"
+                  onClick={() => handleAction(card.card_type, "send")}
+                  disabled={actionLoading === `${card.card_type}-send`}
+                >
+                  {actionLoading === `${card.card_type}-send` ? "发送中..." : "发送到飞书"}
                 </button>
               </div>
               <div className="timestamp-text">最近日期：{card.date || "-"}</div>
