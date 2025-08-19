@@ -5,6 +5,8 @@ import { DataTable } from "../components/DataTable";
 import { MetricBarChart } from "../components/MetricBarChart";
 import { SectionCard } from "../components/SectionCard";
 
+const ACTIVE_TASK_STATUSES = new Set(["pending", "running", "cancelling"]);
+
 function isNumericColumn(rows, column) {
   if (column === "日期" || column.includes("个股") || column.includes("核心股")) {
     return false;
@@ -26,8 +28,10 @@ function buildDefaultMetricMap(sections) {
 export function HistoryPage() {
   const [marketSentiment, setMarketSentiment] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [actionMessage, setActionMessage] = useState("");
   const [error, setError] = useState("");
   const [selectedMetrics, setSelectedMetrics] = useState({});
+  const [marketTask, setMarketTask] = useState(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -47,6 +51,22 @@ export function HistoryPage() {
     loadData();
   }, []);
 
+  const isTaskActive = marketTask ? ACTIVE_TASK_STATUSES.has(marketTask.status) : false;
+
+  const handleRunMarketSentiment = async () => {
+    try {
+      const nextTask = await api.startMarketSentimentTask();
+      setMarketTask(nextTask);
+      setActionMessage(
+        nextTask.created
+          ? "market-sentiment 已加入后台执行，正在轮询任务状态。"
+          : "已有 market-sentiment 任务正在执行，已重新连接到当前任务。",
+      );
+    } catch (err) {
+      setActionMessage(err.message);
+    }
+  };
+
   const historySections = useMemo(() => marketSentiment?.sections || [], [marketSentiment]);
 
   return (
@@ -57,8 +77,19 @@ export function HistoryPage() {
           <h2>这一页现在只保留 market-sentiment，并固定展示最近 20 个交易日。</h2>
           <p>图表和表格直接共用同一份真实数据。点击表头里的数值列，就能切换当前柱状图展示内容。</p>
         </div>
+        <div className="button-row">
+          <button className="primary-button" onClick={handleRunMarketSentiment} disabled={isTaskActive}>
+            更新 market-sentiment
+          </button>
+        </div>
       </section>
 
+      {actionMessage ? <div className="feedback info">{actionMessage}</div> : null}
+      {marketTask ? (
+        <div className="feedback info">
+          当前任务状态：{marketTask.status}
+        </div>
+      ) : null}
       {error ? <div className="feedback error">历史数据读取失败：{error}</div> : null}
       {loading ? <div className="feedback info">正在读取最近 20 个交易日数据...</div> : null}
 
