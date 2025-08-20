@@ -53,6 +53,23 @@ export function HistoryPage() {
 
   const isTaskActive = marketTask ? ACTIVE_TASK_STATUSES.has(marketTask.status) : false;
 
+  useEffect(() => {
+    if (!marketTask?.task_id || !ACTIVE_TASK_STATUSES.has(marketTask.status)) {
+      return undefined;
+    }
+
+    const timer = window.setInterval(async () => {
+      try {
+        const nextTask = await api.getMarketSentimentTask(marketTask.task_id);
+        setMarketTask(nextTask);
+      } catch (err) {
+        setActionMessage(err.message);
+      }
+    }, 1500);
+
+    return () => window.clearInterval(timer);
+  }, [marketTask?.task_id, marketTask?.status]);
+
   const handleRunMarketSentiment = async () => {
     try {
       const nextTask = await api.startMarketSentimentTask();
