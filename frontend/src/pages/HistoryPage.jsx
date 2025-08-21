@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { api } from "../api/client";
 import { DataTable } from "../components/DataTable";
@@ -6,6 +6,35 @@ import { MetricBarChart } from "../components/MetricBarChart";
 import { SectionCard } from "../components/SectionCard";
 
 const ACTIVE_TASK_STATUSES = new Set(["pending", "running", "cancelling"]);
+
+function formatTaskResultMessage(task) {
+  const result = task?.result;
+  if (!result) {
+    return "";
+  }
+  if (task?.status === "succeeded") {
+    return result.success
+      ? `${result.task_name} 已执行完成，输出目标：${result.output_target}`
+      : `${result.task_name} 已执行完成：${result.error_message || "任务未产生新数据。"}`;
+  }
+  return `${result.task_name} 执行失败：${result.error_message || "未知错误"}`;
+}
+
+function formatTaskStatusMessage(task) {
+  if (!task) {
+    return "";
+  }
+  if (task.progress_message) {
+    return task.progress_message;
+  }
+  if (task.status === "cancelled") {
+    return "market-sentiment 更新已取消。";
+  }
+  if (task.status === "failed") {
+    return task.error_message || "market-sentiment 执行失败。";
+  }
+  return `market-sentiment 当前状态：${task.status}`;
+}
 
 function isNumericColumn(rows, column) {
   if (column === "日期" || column.includes("个股") || column.includes("核心股")) {
@@ -32,6 +61,7 @@ export function HistoryPage() {
   const [error, setError] = useState("");
   const [selectedMetrics, setSelectedMetrics] = useState({});
   const [marketTask, setMarketTask] = useState(null);
+  const handledTerminalTaskRef = useRef("");
 
   const loadData = async () => {
     setLoading(true);
@@ -70,8 +100,37 @@ export function HistoryPage() {
     return () => window.clearInterval(timer);
   }, [marketTask?.task_id, marketTask?.status]);
 
+  useEffect(() => {
+    if (!marketTask?.task_id || ACTIVE_TASK_STATUSES.has(marketTask.status)) {
+      return;
+    }
+
+    const handledKey = `${marketTask.task_id}:${marketTask.status}`;
+    if (handledTerminalTaskRef.current === handledKey) {
+      return;
+    }
+    handledTerminalTaskRef.current = handledKey;
+
+    const finalizeTask = async () => {
+      const nextMessage = marketTask.result ? formatTaskResultMessage(marketTask) : formatTaskStatusMessage(marketTask);
+      setActionMessage(nextMessage);
+      if (marketTask.status === "succeeded") {
+        await loadData();
+      }
+    };
+
+    finalizeTask();
+  }, [marketTask]);
+
   const handleRunMarketSentiment = async () => {
     try {
+      if (isTaskActive && marketTask?.task_id) {
+        const cancelledTask = await api.cancelMarketSentimentTask(marketTask.task_id);
+        setMarketTask(cancelledTask);
+        setActionMessage(formatTaskStatusMessage(cancelledTask));
+        return;
+      }
+
       const nextTask = await api.startMarketSentimentTask();
       setMarketTask(nextTask);
       setActionMessage(
@@ -95,8 +154,8 @@ export function HistoryPage() {
           <p>图表和表格直接共用同一份真实数据。点击表头里的数值列，就能切换当前柱状图展示内容。</p>
         </div>
         <div className="button-row">
-          <button className="primary-button" onClick={handleRunMarketSentiment} disabled={isTaskActive}>
-            更新 market-sentiment
+          <button className={`primary-button${isTaskActive ? " danger-button" : ""}`} onClick={handleRunMarketSentiment}>
+            {isTaskActive ? "暂停更新" : "更新 market-sentiment"}
           </button>
         </div>
       </section>
@@ -105,6 +164,7 @@ export function HistoryPage() {
       {marketTask ? (
         <div className="feedback info">
           当前任务状态：{marketTask.status}
+          {marketTask.cancel_requested ? "，已请求取消" : ""}
         </div>
       ) : null}
       {error ? <div className="feedback error">历史数据读取失败：{error}</div> : null}
@@ -147,3 +207,4 @@ export function HistoryPage() {
     </div>
   );
 }
+
