@@ -82,3 +82,97 @@ Kaka_Quant/
 - `POST /market/push/intraday/refresh`
 - `POST /market/push/intraday/send`
 
+### 3. React 前端第一版
+
+前端当前页面包括：
+
+- `/` 项目首页
+- `/market/history` 历史数据页
+- `/market/push` 推送卡片页
+- `/strategies` 策略占位页
+
+当前前端重点：
+
+- 历史页只展示 `market-sentiment`
+- 图表与表格共用同一份真实数据
+- 图表默认显示第一项数值列
+- 点击表头里的数值列，可切换当前柱状图展示指标
+- 历史页支持发起 `market-sentiment` 后台任务，并轮询状态、请求取消
+- 推送页支持盘后、竞价、盘中三类卡片的预览、刷新、发送
+
+### 4. 三类飞书卡片
+
+当前已经接通三类卡片：
+
+- 盘后复盘卡片
+- 竞价观察卡片
+- 盘中节奏卡片
+
+当前状态：
+
+- 盘后卡片：稳定可用
+- 竞价卡片：第一版可用
+- 盘中卡片：实验性，允许因实时权限不足而降级
+
+本地真实联调状态：
+
+- 盘后卡片发送成功
+- 竞价卡片发送成功
+- 盘中卡片发送成功
+
+卡片当前直接基于原始数据层和指标计算层生成，不再反向依赖 Excel 视图层。
+
+## 如何启动项目
+
+推荐按“后端 -> 前端”的顺序启动。
+
+### 1. 安装 Python 依赖
+
+在项目根目录运行：
+
+```bash
+pip install -r requirements.txt
+```
+
+### 2. 确认关键配置
+
+当前项目至少依赖这些配置：
+
+- `TUSHARE_TOKEN`
+- `FEISHU_BOT_WEBHOOK`
+- 可选：`TUSHARE_REQUEST_DELAY`
+
+目前项目把默认配置写在 [`common/config.py`](./common/config.py) 中；如果后续要切换到 `.env` 方案，也建议保持字段名一致。
+
+### 3. 启动后端
+
+在项目根目录运行：
+
+```bash
+uvicorn backend.main:app --reload
+```
+
+默认地址：
+
+- API 根地址：`http://127.0.0.1:8000`
+- Swagger 文档：`http://127.0.0.1:8000/docs`
+
+### 4. 启动前端
+
+进入前端目录：
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+默认地址：
+
+- 前端页面：`http://127.0.0.1:5173`
+
+如果后端不在默认地址，可设置：
+
+```bash
+VITE_API_BASE_URL=http://127.0.0.1:8000
+```
