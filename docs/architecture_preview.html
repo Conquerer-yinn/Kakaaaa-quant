@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kaka_Quant 架构图预览</title>
+    <style>
+      :root {
+        --bg: #f7f4ed;
+        --panel: #fffdf8;
+        --text: #1f2937;
+        --muted: #6b7280;
+        --line: #d6d3d1;
+        --accent: #0f766e;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        background: linear-gradient(180deg, #f4efe3 0%, var(--bg) 100%);
+        color: var(--text);
+      }
+
+      .page {
+        max-width: 1600px;
+        margin: 0 auto;
+        padding: 32px 20px 64px;
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: 32px;
+      }
+
+      .intro {
+        color: var(--muted);
+        margin-bottom: 24px;
+        line-height: 1.7;
+      }
+
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 24px;
+        margin-bottom: 28px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+      }
+
+      h2 {
+        margin: 0 0 8px;
+        font-size: 22px;
+      }
+
+      .desc {
+        margin: 0 0 18px;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+
+      .tip {
+        padding: 12px 14px;
+        border-left: 4px solid var(--accent);
+        background: #ecfdf5;
+        border-radius: 10px;
+        color: #115e59;
+        margin-bottom: 18px;
+      }
+
+      .mermaid-wrap {
+        overflow-x: auto;
+        padding: 16px 8px 8px;
+        border: 1px dashed #d6d3d1;
+        border-radius: 14px;
+        background: #fff;
+      }
+
+      .graph-toolbar {
+        display: flex;
+        gap: 10px;
+        margin: 8px 0 14px;
+        flex-wrap: wrap;
+      }
+
+      .graph-toolbar button {
+        border: 1px solid #cbd5e1;
+        background: #fff;
+        color: var(--text);
+        border-radius: 999px;
+        padding: 8px 14px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      .graph-toolbar button:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .graph-canvas {
+        transform-origin: top left;
+        transition: transform 0.18s ease;
+        min-width: 1450px;
+      }
+
+      .graph-canvas.compact {
+        min-width: 1300px;
+      }
+
+      .mermaid svg {
+        max-width: none !important;
+        height: auto !important;
+      }
+
+      .footer {
+        margin-top: 28px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+    </style>
+    <script type="module">
+      import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: "base",
+        themeVariables: {
+          fontFamily: "Segoe UI, PingFang SC, Microsoft YaHei, sans-serif",
+          fontSize: "18px",
+          primaryColor: "#eef4ff",
+          primaryTextColor: "#111827",
+          primaryBorderColor: "#5b8def",
+          lineColor: "#111827",
+          secondaryColor: "#f8fafc",
+          tertiaryColor: "#fef3c7",
+          clusterBkg: "#f8fafc",
+          clusterBorder: "#94a3b8"
+        },
+        flowchart: {
+          curve: "linear",
+          htmlLabels: true,
+          useMaxWidth: true,
+          nodeSpacing: 40,
+          rankSpacing: 60
+        }
+      });
+
+      window.addEventListener("DOMContentLoaded", () => {
+        const toolbars = document.querySelectorAll("[data-graph]");
+        toolbars.forEach((toolbar) => {
+          const targetId = toolbar.getAttribute("data-graph");
+          const canvas = document.getElementById(targetId);
+          if (!canvas) return;
+          let scale = 1;
+          const applyScale = () => {
+            canvas.style.transform = `scale(${scale})`;
+          };
+          toolbar.querySelector("[data-action='in']").addEventListener("click", () => {
+            scale = Math.min(scale + 0.1, 1.8);
+            applyScale();
+          });
+          toolbar.querySelector("[data-action='out']").addEventListener("click", () => {
+            scale = Math.max(scale - 0.1, 0.7);
+            applyScale();
+          });
+          toolbar.querySelector("[data-action='reset']").addEventListener("click", () => {
+            scale = 1;
+            applyScale();
+          });
+        });
+      });
+    </script>
+  </head>
+  <body>
+    <main class="page">
+      <h1>Kaka_Quant 架构图预览</h1>
+      <p class="intro">
+        这个页面只用于预览当前讨论中的两张核心图：
+        <strong>总体架构图</strong> 和 <strong>总体数据流向图</strong>。
+        先看效果，再决定是否写回 <code>docs/DEV_SPEC.md</code>。
+      </p>
+
+      <section class="card">
+        <h2>总体架构图</h2>
+        <p class="desc">
+          这张图表达当前 1.0 的工程结构：左侧是已有自动化 workflow，中心是策略研发 Agent，右侧是 Codex 辅助流。
+          Agent 内部包含上下文、知识库、tool、编排和 trace，workflow 只提供能力边界与标准化产物。
+        </p>
+        <div class="tip">这版图先作为预览，不直接写入 DEV_SPEC。确认表达准确后，再同步到文档。</div>
+        <div class="graph-toolbar" data-graph="graph-arch">
+          <button data-action="out">缩小</button>
+          <button data-action="reset">重置</button>
+          <button data-action="in">放大</button>
+        </div>
+        <div class="mermaid-wrap">
+          <div class="graph-canvas" id="graph-arch">
+          <pre class="mermaid">
+flowchart LR
+    subgraph WF["自动化 Workflow 系统"]
+        direction TB
+        WF_JOB["任务入口<br/>market/jobs<br/>backend/services"]
+        WF_CALC["指标与快照<br/>market/indicators<br/>market/services"]
+        WF_OUT["标准化产物<br/>Workbook<br/>MarketSnapshot<br/>CardPayload<br/>CapabilityArtifact"]
+        WF_JOB --> WF_CALC --> WF_OUT
+    end
+
+    subgraph AG["策略研发 Agent"]
+        direction TB
+        AG_IO["交互层<br/>Feishu 输入/输出"]
+        AG_CTX["上下文层<br/>recent_messages<br/>session_summary<br/>strategy_spec"]
+        AG_KB["知识库<br/>seed<br/>imported<br/>conclusions"]
+        AG_ORCH["编排层<br/>轻量状态机<br/>ReAct 单轮决策<br/>Plan-and-Execute 多轮收敛"]
+        AG_TOOL["Tool 层<br/>capability_lookup<br/>strategy_spec_tool<br/>gap_check_tool<br/>doc_export_tool"]
+        AG_TRACE["Trace<br/>节点路径<br/>tool 调用<br/>知识读取<br/>草案变更"]
+        AG_DOC["策略设计文档<br/>design_doc"]
+
+        AG_IO --> AG_CTX --> AG_ORCH
+        AG_KB --> AG_ORCH
+        AG_ORCH --> AG_TOOL --> AG_DOC
+        AG_ORCH -. "记录运行轨迹" .-> AG_TRACE
+        AG_TOOL -. "记录调用结果" .-> AG_TRACE
+        AG_KB -. "记录知识读取" .-> AG_TRACE
+    end
+
+    subgraph CX["Codex 辅助流"]
+        direction TB
+        CX_READ["读取 design_doc<br/>阅读项目代码"]
+        CX_IMPL["实现策略 / 补指标<br/>写测试 / 回测"]
+        CX_RESULT["结论文档<br/>测试结果<br/>失败原因<br/>数据限制"]
+        CX_READ --> CX_IMPL --> CX_RESULT
+    end
+
+    WF_OUT -. "能力边界 / 已有输出" .-> AG_TOOL
+    AG_DOC --> CX_READ
+    CX_RESULT -. "手动回流" .-> AG_KB
+
+    classDef panel fill:#eef4ff,stroke:#5b8def,color:#111827,stroke-width:1.4px;
+    classDef panel2 fill:#f8fafc,stroke:#94a3b8,color:#111827,stroke-width:1.2px;
+    classDef deliver fill:#eef8e8,stroke:#86b06d,color:#111827,stroke-width:1.2px;
+    classDef memory fill:#fff7ed,stroke:#d97706,color:#111827,stroke-width:1.2px;
+
+    class WF_JOB,WF_CALC,WF_OUT,AG_IO,AG_CTX,AG_ORCH,AG_TOOL,AG_DOC panel;
+    class CX_READ,CX_IMPL,CX_RESULT deliver;
+    class AG_KB,AG_TRACE memory;
+          </pre>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>总体数据流向图</h2>
+        <p class="desc">
+          这张图表达一轮真实策略研发的数据流：用户消息进入 Agent，编排器读取上下文和知识，tool 处理能力边界和草案，
+          最后导出设计文档；Codex 的结论文档再手动回流到知识库。Trace 贯穿整条链路。
+        </p>
+        <div class="tip">这张图重点看数据、文档、知识和 trace 如何流动，不强调 UI 细节。</div>
+        <div class="graph-toolbar" data-graph="graph-flow">
+          <button data-action="out">缩小</button>
+          <button data-action="reset">重置</button>
+          <button data-action="in">放大</button>
+        </div>
+        <div class="mermaid-wrap">
+          <div class="graph-canvas compact" id="graph-flow">
+          <pre class="mermaid">
+flowchart TD
+    U["用户在 Feishu 提出策略想法"] --> ENTRY["Feishu webhook<br/>backend/api/feishu.py"]
+    ENTRY --> ORCH["strategy_orchestrator<br/>创建 run_id"]
+    ORCH --> TRACE0["Trace: run_started"]
+    ORCH --> CTX["加载上下文<br/>recent_messages<br/>session_summary<br/>strategy_spec"]
+    CTX --> KNOW["读取相关知识<br/>seed / imported / conclusions"]
+    KNOW --> TRACE1["Trace: context_loaded<br/>knowledge_loaded"]
+    TRACE1 --> ROUTER{"node_router<br/>下一步动作"}
+
+    ROUTER -->|需要能力边界| LOOKUP["capability_lookup"]
+    LOOKUP --> REG["capability_registry<br/>常驻指标<br/>按需取数<br/>前瞻采集"]
+    REG --> LOOKUP_RESULT["能力查询结果<br/>已支持 / 需探测"]
+    LOOKUP_RESULT --> TRACE2["Trace: tool_result"]
+
+    ROUTER -->|补充或修正策略| SPEC_TOOL["strategy_spec_tool"]
+    SPEC_TOOL --> SPEC["更新 strategy_spec<br/>缺失字段 / unknowns"]
+    SPEC --> TRACE3["Trace: spec_updated"]
+
+    ROUTER -->|准备判断缺口| GAP_TOOL["gap_check_tool"]
+    GAP_TOOL --> GAP["gap_report<br/>required_data<br/>validation_level<br/>prospective_data_plan"]
+    GAP --> TRACE4["Trace: gap_checked"]
+
+    ROUTER -->|信息不足| ASK["生成追问"]
+    ASK --> REPLY1["回复 Feishu"]
+
+    TRACE2 --> ROUTER
+    TRACE3 --> ROUTER
+    TRACE4 --> DOC_DECIDE{"可导出文档？"}
+    DOC_DECIDE -->|draft / final| EXPORT["doc_export_tool"]
+    DOC_DECIDE -->|继续讨论| REPLY2["回复阶段总结"]
+    EXPORT --> DOC["design_doc<br/>策略设计文档"]
+    DOC --> TRACE5["Trace: doc_exported"]
+    TRACE5 --> REPLY3["回复 Feishu"]
+
+    DOC --> HANDOFF["用户交给 Codex"]
+    HANDOFF --> CODEX["Codex 实现策略 / 补指标 / 写测试"]
+    CODEX --> CONCLUSION["结论文档<br/>验证结果 / 失败原因 / 数据限制"]
+    CONCLUSION --> INGEST["用户手动导入 Agent 知识库"]
+    INGEST --> KNOW_STORE["knowledge/conclusions"]
+    KNOW_STORE -. "下一轮作为经验上下文" .-> KNOW
+
+    REPLY1 --> TRACE6["Trace: reply_sent"]
+    REPLY2 --> TRACE6
+    REPLY3 --> TRACE6
+
+    classDef input fill:#eef4ff,stroke:#5b8def,color:#111827,stroke-width:1.2px;
+    classDef decision fill:#fff7ed,stroke:#d97706,color:#111827,stroke-width:1.2px;
+    classDef tool fill:#f5f3ff,stroke:#7c3aed,color:#111827,stroke-width:1.2px;
+    classDef support fill:#f8fafc,stroke:#94a3b8,color:#111827,stroke-width:1.1px;
+    classDef output fill:#eef8e8,stroke:#86b06d,color:#111827,stroke-width:1.2px;
+    classDef memory fill:#fff7ed,stroke:#d97706,color:#111827,stroke-width:1.2px;
+
+    class U,ENTRY,CTX,KNOW,SPEC,ASK input;
+    class ROUTER,DOC_DECIDE decision;
+    class LOOKUP,SPEC_TOOL,GAP_TOOL,EXPORT tool;
+    class REG,LOOKUP_RESULT,GAP support;
+    class DOC,REPLY1,REPLY2,REPLY3,HANDOFF,CODEX,CONCLUSION output;
+    class TRACE0,TRACE1,TRACE2,TRACE3,TRACE4,TRACE5,TRACE6,INGEST,KNOW_STORE memory;
+          </pre>
+          </div>
+        </div>
+      </section>
+
+      <p class="footer">
+        如果浏览器无法加载 mermaid，通常是因为本地浏览器无法访问 CDN。那种情况下我可以再给你出一个纯 SVG 版本或纯文本框图版本。
+      </p>
+    </main>
+  </body>
+</html>
