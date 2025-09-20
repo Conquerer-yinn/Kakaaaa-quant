@@ -1,0 +1,9 @@
+# 用于管理哪些策略需要纳入日常运行。
+# 研究记录请直接放在 strategies/ 目录中。
+
+strategies:
+  - name: example_strategy
+    script: strategies/example_strategy.py
+    enabled: false
+    push: false
+    notes: strategies/example_strategy.md

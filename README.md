@@ -176,3 +176,77 @@ npm run dev
 ```bash
 VITE_API_BASE_URL=http://127.0.0.1:8000
 ```
+
+## 当前推荐使用方式
+
+### 1. 更新 `market-sentiment`
+
+可以通过前端历史页触发，也可以直接调 API：
+
+```bash
+POST /tasks/market-sentiment/run
+```
+
+当前后端会：
+
+1. 创建后台任务并返回 `task_id`
+2. 调用 `run_market_sentiment.py`
+3. 优先维护历史主表
+4. 前端轮询状态并在完成后刷新最近 20 个交易日数据
+
+### 2. 查看历史页
+
+历史页当前只展示：
+
+- `总市场数据`
+- `高度观察`
+- `创业板专区`
+
+页面默认只显示最近 20 个交易日，并过滤掉“位置 / 相对中枢”等当前前端不需要的冗余列。
+
+### 3. 预览与发送卡片
+
+前端推送页或 API 都可以调用：
+
+- `/market/push/cards`
+- `/market/push/{card_type}/refresh`
+- `/market/push/{card_type}/send`
+
+其中 `card_type` 包括：
+
+- `post-close`
+- `auction`
+- `intraday`
+
+## 当前已知遗留问题
+
+当前最明确的遗留问题不是前后端闭环，而是 Excel 模板侧问题：
+
+1. 历史主表更新后，Excel 可能修复 `externalLinks` 缓存。
+2. 历史主表中的图表未必自动刷新到最新范围。
+
+详细记录见：
+
+- `project_memory/decisions/2026-04-02_历史主表更新后Excel外部链接与图表遗留问题.md`
+
+## 进一步阅读建议
+
+如果你刚接手这个项目，建议按这个顺序读：
+
+1. `README.md`
+2. `backend/README.md`
+3. `frontend/README.md`
+4. `market/jobs/README.md`
+5. `DEVELOPMENT_PLAN.md`
+6. `project_memory/handoff/PROJECT_STATUS.md`
+7. `project_memory/handoff/AI_HANDOFF.md`
+
+## 说明
+
+这个项目长期协作要求是：
+
+- 重要结论要同步写入 `project_memory/decisions/`
+- 项目状态变化要同步写入 `project_memory/handoff/PROJECT_STATUS.md`
+- 长期窗口的重要对话要归档到 `project_memory/chat_archive/`
+
+这样即使换窗口、换模型、换人接手，项目上下文也不会断。
