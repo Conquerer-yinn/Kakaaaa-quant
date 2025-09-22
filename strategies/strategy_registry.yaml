@@ -1,5 +1,12 @@
 # 用于管理哪些策略需要纳入日常运行。
 # 研究记录请直接放在 strategies/ 目录中。
+#
+# 字段说明：
+#   name    策略唯一名称
+#   script  策略脚本路径（相对项目根目录）
+#   enabled 是否纳入日常运行
+#   push    运行后是否推送飞书摘要
+#   notes   研究笔记路径
 
 strategies:
   - name: example_strategy
@@ -7,3 +14,8 @@ strategies:
     enabled: false
     push: false
     notes: strategies/example_strategy.md
+  - name: limit_up_follow
+    script: strategies/limit_up_follow.py
+    enabled: false
+    push: false
+    notes: strategies/limit_up_follow.md
