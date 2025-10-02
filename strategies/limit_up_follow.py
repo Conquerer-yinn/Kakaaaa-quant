@@ -2,11 +2,19 @@
 
 样本池：当日连板数达到门槛的涨停股。
 隔日表现：次日开盘 / 收盘相对样本日收盘的溢价。
+环境过滤：读取情绪历史主表，情绪冰点时提示暂停跟踪。
 核心逻辑保持纯函数，方便离线测试。
 """
 from __future__ import annotations
 
+import os
+import sys
+
 import pandas as pd
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
 SAMPLE_COLUMNS = ["日期", "ts_code", "名称", "连板数"]
 FEEDBACK_COLUMNS = SAMPLE_COLUMNS + ["次日开盘溢价(%)", "次日收盘溢价(%)"]
@@ -74,3 +82,39 @@ def summarize_feedback(feedback_df) -> dict:
         "avg_open_premium": round(float(open_premium.mean()), 2) if not open_premium.empty else None,
         "avg_close_premium": round(float(close_premium.mean()), 2) if not close_premium.empty else None,
     }
+
+
+def load_sentiment_env() -> dict | None:
+    """读取最新情绪历史主表，取最近一行总市场数据作为环境参考。
+
+    读取失败时返回 None，不阻塞策略本身。
+    """
+    try:
+        from market.services.market_sentiment_workbook import find_latest_history_workbook
+        from storage.excel_helper import ExcelHelper
+
+        latest = find_latest_history_workbook()
+        if latest is None:
+            return None
+        df = ExcelHelper.read_sheet(latest.file_name, "总市场数据")
+        if df is None or df.empty:
+            return None
+        row = df.iloc[-1]
+        return {
+            "日期": row.get("日期"),
+            "涨停数": row.get("涨停数"),
+            "炸板数": row.get("炸板数"),
+            "最高连板": row.get("最高连板"),
+        }
+    except Exception:
+        return None
+
+
+def should_follow_by_env(env: dict | None, min_limit_up: int = 30) -> bool:
+    """情绪冰点（涨停家数过少）时提示暂停连板跟踪。环境缺失时默认继续。"""
+    if not env:
+        return True
+    limit_up = pd.to_numeric(pd.Series([env.get("涨停数")]), errors="coerce").iloc[0]
+    if pd.isna(limit_up):
+        return True
+    return int(limit_up) >= min_limit_up
