@@ -1,7 +1,7 @@
 """连板样本研究：跟踪连板梯队的隔日表现。
 
-样本池：当日连板数达到门槛的涨停股。
-隔日表现：次日开盘 / 收盘相对样本日收盘的溢价。
+样本池：当日连板数达到门槛的涨停股（按代码去重）。
+隔日表现：次日开盘 / 收盘相对样本日收盘的溢价；次日停牌样本剔除。
 环境过滤：读取情绪历史主表，情绪冰点时提示暂停跟踪。
 核心逻辑保持纯函数，方便离线测试。
 """
@@ -21,7 +21,7 @@ FEEDBACK_COLUMNS = SAMPLE_COLUMNS + ["次日开盘溢价(%)", "次日收盘溢�
 
 
 def build_follow_samples(trade_date, limit_df, min_streak: int = 2) -> pd.DataFrame:
-    """从涨停名单里取出连板数达到门槛的样本。"""
+    """从涨停名单里取出连板数达到门槛的样本，按代码去重。"""
     if limit_df is None or limit_df.empty:
         return pd.DataFrame(columns=SAMPLE_COLUMNS)
 
@@ -34,25 +34,25 @@ def build_follow_samples(trade_date, limit_df, min_streak: int = 2) -> pd.DataFr
     if samples.empty:
         return pd.DataFrame(columns=SAMPLE_COLUMNS)
 
-    return pd.DataFrame(
+    result = pd.DataFrame(
         {
             "日期": str(trade_date),
             "ts_code": samples["ts_code"].astype(str),
             "名称": samples.get("name"),
             "连板数": samples["limit_times"].astype(int),
         }
-    )[SAMPLE_COLUMNS].sort_values("连板数", ascending=False).reset_index(drop=True)
+    )[SAMPLE_COLUMNS].sort_values("连板数", ascending=False)
+    # 同一代码在名单里出现多次时，只保留连板数最高的一条。
+    result = result.drop_duplicates(subset=["ts_code"], keep="first")
+    return result.reset_index(drop=True)
 
 
 def evaluate_next_day(samples_df, next_daily_df) -> pd.DataFrame:
-    """给样本补上次日开盘 / 收盘溢价。"""
+    """给样本补上次日开盘 / 收盘溢价；次日无行情（停牌）样本直接剔除。"""
     if samples_df is None or samples_df.empty:
         return pd.DataFrame(columns=FEEDBACK_COLUMNS)
     if next_daily_df is None or next_daily_df.empty:
-        result = samples_df.copy()
-        result["次日开盘溢价(%)"] = None
-        result["次日收盘溢价(%)"] = None
-        return result[FEEDBACK_COLUMNS]
+        return pd.DataFrame(columns=FEEDBACK_COLUMNS)
 
     daily = next_daily_df.copy()
     for column in ["open", "close", "pre_close"]:
@@ -64,10 +64,19 @@ def evaluate_next_day(samples_df, next_daily_df) -> pd.DataFrame:
         on="ts_code",
         how="left",
     )
-    valid = merged["pre_close"].notna() & (merged["pre_close"] != 0)
-    merged.loc[valid, "次日开盘溢价(%)"] = ((merged.loc[valid, "open"] / merged.loc[valid, "pre_close"] - 1) * 100).round(2)
-    merged.loc[valid, "次日收盘溢价(%)"] = ((merged.loc[valid, "close"] / merged.loc[valid, "pre_close"] - 1) * 100).round(2)
-    return merged[FEEDBACK_COLUMNS]
+    valid = (
+        merged["pre_close"].notna()
+        & (merged["pre_close"] != 0)
+        & merged["open"].notna()
+        & merged["close"].notna()
+    )
+    merged = merged[valid].copy()
+    if merged.empty:
+        return pd.DataFrame(columns=FEEDBACK_COLUMNS)
+
+    merged["次日开盘溢价(%)"] = ((merged["open"] / merged["pre_close"] - 1) * 100).round(2)
+    merged["次日收盘溢价(%)"] = ((merged["close"] / merged["pre_close"] - 1) * 100).round(2)
+    return merged[FEEDBACK_COLUMNS].reset_index(drop=True)
 
 
 def summarize_feedback(feedback_df) -> dict:
