@@ -28,12 +28,17 @@ def load_registry(registry_file: str | None = None) -> list[StrategyEntry]:
         data = yaml.safe_load(f) or {}
 
     entries = []
+    seen_names = set()
     for item in data.get("strategies", []):
         if not item.get("name") or not item.get("script"):
             raise ValueError(f"Registry entry missing name/script: {item!r}")
+        name = str(item["name"])
+        if name in seen_names:
+            raise ValueError(f"Duplicate strategy name in registry: {name}")
+        seen_names.add(name)
         entries.append(
             StrategyEntry(
-                name=str(item["name"]),
+                name=name,
                 script=str(item["script"]),
                 enabled=bool(item.get("enabled", False)),
                 push=bool(item.get("push", False)),
@@ -45,3 +50,8 @@ def load_registry(registry_file: str | None = None) -> list[StrategyEntry]:
 
 def enabled_strategies(registry_file: str | None = None) -> list[StrategyEntry]:
     return [entry for entry in load_registry(registry_file) if entry.enabled]
+
+
+def push_enabled_strategies(registry_file: str | None = None) -> list[StrategyEntry]:
+    """既启用又需要推送摘要的策略。"""
+    return [entry for entry in enabled_strategies(registry_file) if entry.push]
