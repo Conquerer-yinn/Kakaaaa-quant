@@ -1,7 +1,7 @@
 """策略统一运行入口。
 
 按注册表顺序执行 enabled 策略：每个策略模块约定暴露 `run(trade_date)`。
-单个策略失败不影响其他策略继续执行。
+单个策略失败不影响其他策略继续执行；注册表开启 push 时发送汇总卡片。
 """
 from __future__ import annotations
 
@@ -15,13 +15,14 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from strategies.registry import enabled_strategies, load_registry
+from strategies.registry import enabled_strategies, load_registry, push_enabled_strategies
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Run strategies listed in strategy_registry.yaml.")
     parser.add_argument("--all", action="store_true", help="列出全部策略（含未启用），不执行。")
     parser.add_argument("--trade-date", default=datetime.today().strftime("%Y%m%d"), help="交易日，格式 YYYYMMDD。")
+    parser.add_argument("--no-push", action="store_true", help="本次运行不发送飞书摘要。")
     return parser.parse_args()
 
 
@@ -67,6 +68,15 @@ def main():
         status = "OK " if item["success"] else "FAIL"
         detail = item["output"] if item["success"] else item["error"]
         print(f"[{status}] {item['name']}: {detail}")
+
+    if not args.no_push and push_enabled_strategies():
+        from strategies.strategy_card import send_strategy_summary
+
+        try:
+            send_strategy_summary(args.trade_date, results)
+            print("已发送策略运行摘要卡片。")
+        except Exception as exc:
+            print(f"策略摘要卡片发送失败：{exc}")
 
 
 if __name__ == "__main__":
