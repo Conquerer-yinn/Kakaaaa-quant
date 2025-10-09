@@ -7,6 +7,7 @@ from backend.schemas.frontend import (
     PushCardListResponse,
     PushCardRequest,
     PushCardSendRequest,
+    StrategyListResponse,
 )
 from backend.schemas.tasks import (
     BackgroundTaskStartResponse,
@@ -19,6 +20,7 @@ from backend.schemas.tasks import (
 )
 from backend.services.frontend_data import build_dashboard_summary, build_market_sentiment_history
 from backend.services.push_cards import list_push_cards, refresh_push_card, send_push_card
+from backend.services.strategy_data import build_strategy_list
 from backend.services.task_manager import market_sentiment_task_manager
 from backend.services.task_registry import list_task_metadata
 from backend.services.task_runner import run_daily_basics_task
@@ -56,6 +58,11 @@ def get_market_sentiment_history(limit: int = Query(default=20, ge=10, le=120)):
 @router.get("/market/push/cards", response_model=PushCardListResponse, tags=["frontend"])
 def get_push_cards():
     return list_push_cards()
+
+
+@router.get("/strategies", response_model=StrategyListResponse, tags=["frontend"])
+def get_strategies():
+    return build_strategy_list()
 
 
 @router.post("/market/push/post-close/refresh", response_model=PushCardActionResponse, tags=["frontend"])

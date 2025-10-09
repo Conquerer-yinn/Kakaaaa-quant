@@ -80,3 +80,17 @@ class PushCardActionResponse(BaseModel):
     card_payload: dict[str, Any] | None = None
     send_response: dict[str, Any] | None = None
     error_message: str | None = None
+
+
+class StrategyItemResponse(BaseModel):
+    name: str = Field(..., description="策略名称。")
+    script: str = Field(..., description="策略脚本路径。")
+    enabled: bool = Field(..., description="是否纳入日常运行。")
+    push: bool = Field(..., description="运行后是否推送摘要。")
+    notes: str | None = Field(default=None, description="研究笔记路径。")
+
+
+class StrategyListResponse(BaseModel):
+    success: bool
+    strategies: list[StrategyItemResponse] = Field(default_factory=list)
+    error_message: str | None = None
