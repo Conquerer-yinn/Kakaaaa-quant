@@ -27,6 +27,9 @@ export const api = {
   getPushCards() {
     return request("/market/push/cards");
   },
+  getStrategies() {
+    return request("/strategies");
+  },
   startMarketSentimentTask(payload = {}) {
     return request("/tasks/market-sentiment/run", {
       method: "POST",
