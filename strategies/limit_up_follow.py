@@ -16,20 +16,18 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
+from strategies.utils import coerce_numeric, filter_limit_up
+
 SAMPLE_COLUMNS = ["日期", "ts_code", "名称", "连板数"]
 FEEDBACK_COLUMNS = SAMPLE_COLUMNS + ["次日开盘溢价(%)", "次日收盘溢价(%)"]
 
 
 def build_follow_samples(trade_date, limit_df, min_streak: int = 2) -> pd.DataFrame:
     """从涨停名单里取出连板数达到门槛的样本，按代码去重。"""
-    if limit_df is None or limit_df.empty:
-        return pd.DataFrame(columns=SAMPLE_COLUMNS)
-
-    limit_up = limit_df[limit_df["limit"] == "U"].copy()
+    limit_up = filter_limit_up(limit_df)
     if limit_up.empty:
         return pd.DataFrame(columns=SAMPLE_COLUMNS)
 
-    limit_up["limit_times"] = pd.to_numeric(limit_up.get("limit_times"), errors="coerce").fillna(0)
     samples = limit_up[limit_up["limit_times"] >= min_streak]
     if samples.empty:
         return pd.DataFrame(columns=SAMPLE_COLUMNS)
@@ -54,10 +52,7 @@ def evaluate_next_day(samples_df, next_daily_df) -> pd.DataFrame:
     if next_daily_df is None or next_daily_df.empty:
         return pd.DataFrame(columns=FEEDBACK_COLUMNS)
 
-    daily = next_daily_df.copy()
-    for column in ["open", "close", "pre_close"]:
-        if column in daily.columns:
-            daily[column] = pd.to_numeric(daily[column], errors="coerce")
+    daily = coerce_numeric(next_daily_df, ["open", "close", "pre_close"])
 
     merged = samples_df.merge(
         daily[["ts_code", "open", "close", "pre_close"]],
@@ -127,3 +122,31 @@ def should_follow_by_env(env: dict | None, min_limit_up: int = 30) -> bool:
     if pd.isna(limit_up):
         return True
     return int(limit_up) >= min_limit_up
+
+
+def run(trade_date: str):
+    """抓取指定交易日的涨停名单，登记连板样本池。"""
+    from data_engine.tushare_api import TushareDataEngine
+    from strategies.strategy_output import write_strategy_result
+
+    env = load_sentiment_env()
+    if not should_follow_by_env(env):
+        print(f"{trade_date} 情绪环境偏冷（涨停数过少），本次跳过连板跟踪。")
+        return None
+
+    engine = TushareDataEngine()
+    limit_df = engine.get_limit_list(trade_date)
+    samples = build_follow_samples(trade_date, limit_df)
+    if samples.empty:
+        print(f"{trade_date} 没有满足条件的连板样本。")
+        return None
+
+    output_path = write_strategy_result(samples, "limit_up_follow")
+    print(f"Wrote {len(samples)} rows to {output_path}")
+    return output_path
+
+
+if __name__ == "__main__":
+    from datetime import datetime
+
+    run(datetime.today().strftime("%Y%m%d"))
