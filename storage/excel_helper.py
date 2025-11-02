@@ -72,10 +72,12 @@ class ExcelHelper:
         else:
             merged_df = df.copy()
 
+        # 先统一日期口径再去重：读回来的历史数据日期可能是整数，
+        # 与新增的字符串日期直接比较会导致去重失效。
+        merged_df = ExcelHelper._normalize_date_column(merged_df)
+
         if dedupe_subset:
             merged_df = merged_df.drop_duplicates(subset=dedupe_subset, keep="last")
-
-        merged_df = ExcelHelper._normalize_date_column(merged_df)
 
         try:
             merged_df.to_excel(file_path, index=False, sheet_name=sheet_name)
