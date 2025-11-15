@@ -72,6 +72,7 @@ Kaka_Quant/
 - `GET /dashboard/summary`
 - `GET /market/history/market-sentiment`
 - `GET /market/push/cards`
+- `GET /strategies`
 
 #### 卡片刷新与发送接口
 
@@ -89,7 +90,7 @@ Kaka_Quant/
 - `/` 项目首页
 - `/market/history` 历史数据页
 - `/market/push` 推送卡片页
-- `/strategies` 策略占位页
+- `/strategies` 策略页（已接入注册表真实数据）
 
 当前前端重点：
 
@@ -121,6 +122,20 @@ Kaka_Quant/
 - 盘中卡片发送成功
 
 卡片当前直接基于原始数据层和指标计算层生成，不再反向依赖 Excel 视图层。
+
+### 5. 策略主线
+
+- `strategies/strategy_registry.yaml` 管理策略的启用与推送
+- `strategies/run_strategies.py` 按注册表批量执行，失败互相隔离
+- 已落地 `example_strategy`（涨停放量筛选）与 `limit_up_follow`（连板隔日反馈）
+- 策略结果统一输出到 `storage/data_master/策略数据_策略名.xlsx`
+
+### 6. 测试与持续集成
+
+- `pytest`：覆盖配置、数据引擎、存储、指标、卡片、任务与 API（`tests/`）
+- `ruff check .`：语法级静态闸门
+- GitHub Actions：后端测试、前端构建校验（`.github/workflows/`）
+- Docker：`docker compose up --build` 一键起前后端
 
 ## 如何启动项目
 
@@ -234,12 +249,13 @@ POST /tasks/market-sentiment/run
 如果你刚接手这个项目，建议按这个顺序读：
 
 1. `README.md`
-2. `backend/README.md`
-3. `frontend/README.md`
-4. `market/jobs/README.md`
-5. `DEVELOPMENT_PLAN.md`
-6. `project_memory/handoff/PROJECT_STATUS.md`
-7. `project_memory/handoff/AI_HANDOFF.md`
+2. `docs/ARCHITECTURE.md`
+3. `docs/RUNBOOK.md`
+4. `backend/README.md`
+5. `frontend/README.md`
+6. `market/jobs/README.md`
+7. `project_memory/handoff/PROJECT_STATUS.md`
+8. `project_memory/handoff/AI_HANDOFF.md`
 
 ## 说明
 
