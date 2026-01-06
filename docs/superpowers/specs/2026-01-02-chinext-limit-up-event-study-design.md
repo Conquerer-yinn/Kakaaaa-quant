@@ -80,3 +80,22 @@
 - 返回事件明细、汇总和跳过样本元数据。
 - 作为主要单元测试对象。
 
+### 工作簿层
+
+`strategies/chinext_limit_up_workbook.py`
+
+- 负责结果文件命名。
+- 负责写入三个 sheet。
+- 负责定位最新研究文件。
+- 不包含研究计算。
+
+### 运行层
+
+`strategies/run_chinext_limit_up_event_study.py`
+
+- 解析日期区间。
+- 使用 `TushareDataEngine` 拉取交易日、日线和涨停表。
+- 调用纯计算层。
+- 调用工作簿层输出 Excel。
+- 支持 CLI 和后端同步调用。
+
