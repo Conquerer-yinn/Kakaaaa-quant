@@ -110,3 +110,154 @@ Run: `.venv/Scripts/python -m unittest tests.strategies.test_chinext_limit_up_ev
 
 Expected: all event-study tests pass.
 
+### Task 3: Add workbook persistence and runner
+
+**Files:**
+- Create: `strategies/chinext_limit_up_workbook.py`
+- Create: `strategies/run_chinext_limit_up_event_study.py`
+- Create: `tests/strategies/test_chinext_limit_up_workbook.py`
+- Create: `tests/strategies/test_run_chinext_limit_up_event_study.py`
+- Modify: `.gitignore`
+
+- [ ] **Step 1: Write failing workbook tests**
+
+Assert file names follow `创业板涨停事件研究_YYYYMMDD_YYYYMMDD.xlsx`, writing produces the three required sheets, and latest-file lookup selects the greatest end date.
+
+- [ ] **Step 2: Verify workbook tests fail**
+
+Run: `.venv/Scripts/python -m unittest tests.strategies.test_chinext_limit_up_workbook -v`
+
+Expected: import failure because the workbook module is absent.
+
+- [ ] **Step 3: Implement workbook functions**
+
+The functions must satisfy this concrete contract:
+
+```python
+file_name = build_event_study_file_name("20260101", "20260331")
+assert file_name == "创业板涨停事件研究_20260101_20260331.xlsx"
+output_path = write_event_study_workbook(result, "20260101", "20260331", base_dir=temp_dir)
+assert Path(output_path).exists()
+latest = find_latest_event_study_workbook(base_dir=temp_dir)
+assert latest.file_name == file_name
+assert latest.start_date == "20260101"
+assert latest.end_date == "20260331"
+```
+
+- [ ] **Step 4: Write failing runner tests**
+
+Test `normalize_ymd`, default 120-calendar-day range, invalid reversed ranges, fetch-end buffering, and runner orchestration with an injected fake engine.
+
+- [ ] **Step 5: Implement the runner**
+
+The runner must satisfy this injectable contract:
+
+```python
+output_path = run_chinext_limit_up_event_study(
+    start_date="20260101",
+    end_date="20260331",
+    base_dir=temp_dir,
+    engine=fake_engine,
+)
+assert Path(output_path).exists()
+assert fake_engine.calendar_requests == [("20260101", "20260414")]
+```
+
+The runner fetches the trading calendar through `end_date + 14 calendar days`, loads daily quotes for all returned dates, loads limit events only for the requested event interval, calculates the study, and writes the workbook.
+
+- [ ] **Step 6: Verify GREEN**
+
+Run: `.venv/Scripts/python -m unittest tests.strategies.test_chinext_limit_up_workbook tests.strategies.test_run_chinext_limit_up_event_study -v`
+
+Expected: all persistence and runner tests pass.
+
+### Task 4: Expose results through FastAPI with TDD
+
+**Files:**
+- Create: `backend/schemas/strategies.py`
+- Create: `backend/services/strategy_data.py`
+- Modify: `backend/api/routes.py`
+- Create: `tests/backend/test_strategy_data.py`
+- Create: `tests/backend/test_strategy_routes.py`
+
+- [ ] **Step 1: Write failing service tests**
+
+Write a temporary workbook and assert the response includes the latest file name, summary rows, run metadata, limited recent details, and a clear empty-state error.
+
+- [ ] **Step 2: Verify RED**
+
+Run: `.venv/Scripts/python -m unittest tests.backend.test_strategy_data -v`
+
+Expected: import failure because the service module is absent.
+
+- [ ] **Step 3: Implement response schemas and service**
+
+```python
+class StrategyStudyRunRequest(BaseModel):
+    start_date: str | None = None
+    end_date: str | None = None
+
+class StrategyStudyResponse(BaseModel):
+    success: bool
+    strategy_key: str
+    title: str
+    description: str
+    file_name: str | None = None
+    updated_at: str | None = None
+    summary: list[dict[str, Any]] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    detail_columns: list[str] = Field(default_factory=list)
+    details: list[dict[str, Any]] = Field(default_factory=list)
+    error_message: str | None = None
+```
+
+- [ ] **Step 4: Write failing route tests**
+
+Assert OpenAPI contains GET and POST `/strategies/chinext-limit-up-event-study` paths and direct route calls return the declared response model.
+
+- [ ] **Step 5: Add GET and POST routes**
+
+GET reads the latest workbook. POST runs the synchronous research task and then reads the new workbook. Both preserve readable domain errors in the response.
+
+- [ ] **Step 6: Verify GREEN**
+
+Run: `.venv/Scripts/python -m unittest tests.backend.test_strategy_data tests.backend.test_strategy_routes -v`
+
+Expected: backend strategy tests pass.
+
+### Task 5: Replace the strategy placeholder page
+
+**Files:**
+- Modify: `frontend/src/api/client.js`
+- Modify: `frontend/src/pages/StrategiesPage.jsx`
+- Modify: `frontend/src/styles.css`
+- Modify: `backend/services/frontend_data.py`
+
+- [ ] **Step 1: Add the two API client methods**
+
+```javascript
+getChinextLimitUpStudy(limit = 100) {
+  return request(`/strategies/chinext-limit-up-event-study?limit=${limit}`);
+},
+runChinextLimitUpStudy(payload = {}) {
+  return request("/strategies/chinext-limit-up-event-study/run", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+},
+```
+
+- [ ] **Step 2: Implement the real page**
+
+Use existing `SectionCard`, `MetricGrid`, `DataTable`, feedback, and button styles. Load current results on mount, run the default 120-day study on button click, and render only backend-provided data.
+
+- [ ] **Step 3: Update dashboard wording**
+
+Replace “策略占位” with the new event-study capability and link description.
+
+- [ ] **Step 4: Verify the production build**
+
+Run: `cd frontend && npm run build`
+
+Expected: Vite build succeeds with no compile errors.
+
