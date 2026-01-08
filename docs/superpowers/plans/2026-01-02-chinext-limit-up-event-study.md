@@ -261,3 +261,54 @@ Run: `cd frontend && npm run build`
 
 Expected: Vite build succeeds with no compile errors.
 
+### Task 6: Register and document the strategy
+
+**Files:**
+- Modify: `strategies/strategy_registry.yaml`
+- Modify: `strategies/README.md`
+- Modify: `README.md`
+- Modify: `project_memory/handoff/PROJECT_STATUS.md`
+- Create: `project_memory/decisions/2026-02-20_创业板涨停事件研究第一版.md`
+
+- [ ] **Step 1: Replace the fake registry entry**
+
+Register `chinext_limit_up_event_study`, point at the runner, keep `enabled: false`, and state that it is a research job rather than an automated trading strategy.
+
+- [ ] **Step 2: Document run and review flows**
+
+Document CLI usage, API paths, Excel sheets, research caveats, and frontend location.
+
+- [ ] **Step 3: Update project memory**
+
+Record the event definition, return convention, intentional non-goals, and next iteration options.
+
+### Task 7: Full verification and delivery
+
+**Files:**
+- Modify only files required by failures found during verification.
+
+- [ ] **Step 1: Run all Python tests**
+
+Run: `.venv/Scripts/python -m unittest discover -s tests -p "test_*.py" -v`
+
+Expected: all tests pass with zero failures.
+
+- [ ] **Step 2: Run Python static parsing and import smoke checks**
+
+Parse every tracked Python file with `ast.parse`, import `backend.main`, and verify both new OpenAPI paths exist.
+
+- [ ] **Step 3: Run frontend build**
+
+Run: `cd frontend && npm run build`
+
+Expected: build succeeds.
+
+- [ ] **Step 4: Run a real short-range study**
+
+Run: `.venv/Scripts/python strategies/run_chinext_limit_up_event_study.py --start-date <bounded historical date> --end-date <bounded historical date>`
+
+Expected: an ignored workbook is written under `storage/strategy_results/` and the GET service reads it. If credentials or network block this step, record the exact gap without weakening automated verification.
+
+- [ ] **Step 5: Review diff and commit with Lore trailers**
+
+Commit documentation, implementation, and verification evidence in small coherent commits. Push `codex/feature-development` after all verification passes.
