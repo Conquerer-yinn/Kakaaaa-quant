@@ -29,5 +29,12 @@ class ConfigSecurityTest(unittest.TestCase):
                 self.assertIsInstance(call, ast.Call)
                 self.assertEqual(len(call.args), 1)
 
+    def test_env_example_documents_required_credentials(self):
+        content = (PROJECT_ROOT / ".env.example").read_text(encoding="utf-8")
+
+        self.assertIn("TUSHARE_TOKEN=", content)
+        self.assertIn("FEISHU_BOT_WEBHOOK=", content)
+
+
 if __name__ == "__main__":
     unittest.main()
