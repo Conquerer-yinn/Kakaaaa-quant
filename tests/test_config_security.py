@@ -19,5 +19,15 @@ def load_assignments(relative_path: str) -> dict[str, ast.AST]:
     return assignments
 
 
+class ConfigSecurityTest(unittest.TestCase):
+    def test_sensitive_environment_values_have_no_default(self):
+        assignments = load_assignments("common/config.py")
+
+        for name in ("TUSHARE_TOKEN", "FEISHU_BOT_WEBHOOK"):
+            with self.subTest(name=name):
+                call = assignments[name]
+                self.assertIsInstance(call, ast.Call)
+                self.assertEqual(len(call.args), 1)
+
 if __name__ == "__main__":
     unittest.main()
