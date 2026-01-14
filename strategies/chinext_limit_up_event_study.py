@@ -45,3 +45,18 @@ class EventStudyResult:
     skipped_missing_quote_count: int
 
 
+def _extract_chinext_limit_up_events(limit_df: pd.DataFrame | None) -> pd.DataFrame:
+    if limit_df is None or limit_df.empty:
+        return pd.DataFrame(columns=["ts_code", "name", "limit", "limit_times"])
+    if "ts_code" not in limit_df.columns or "limit" not in limit_df.columns:
+        return pd.DataFrame(columns=["ts_code", "name", "limit", "limit_times"])
+
+    frame = limit_df.copy()
+    for column in ("name", "limit_times"):
+        if column not in frame.columns:
+            frame[column] = None
+    code_mask = frame["ts_code"].astype(str).str.startswith(("300", "301"))
+    limit_mask = frame["limit"].astype(str).str.upper().eq("U")
+    return frame.loc[code_mask & limit_mask, ["ts_code", "name", "limit", "limit_times"]]
+
+
