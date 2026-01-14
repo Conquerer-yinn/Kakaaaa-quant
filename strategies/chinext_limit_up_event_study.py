@@ -33,3 +33,15 @@ SUMMARY_COLUMNS = [
     "最大收益率(%)",
     "最小收益率(%)",
 ]
+
+
+@dataclass(frozen=True)
+class EventStudyResult:
+    details: pd.DataFrame
+    summary: pd.DataFrame
+    candidate_event_count: int
+    complete_sample_count: int
+    skipped_incomplete_count: int
+    skipped_missing_quote_count: int
+
+
