@@ -75,3 +75,11 @@ def _close_by_code(daily_df: pd.DataFrame | None) -> dict[str, float]:
     }
 
 
+def _return_percent(close: float, event_close: float) -> float:
+    return round((float(close) / float(event_close) - 1) * 100, 2)
+
+
+def _valid_close(value: object) -> bool:
+    return value is not None and pd.notna(value) and float(value) > 0
+
+
