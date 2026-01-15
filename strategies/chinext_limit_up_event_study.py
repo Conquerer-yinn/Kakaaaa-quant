@@ -60,3 +60,18 @@ def _extract_chinext_limit_up_events(limit_df: pd.DataFrame | None) -> pd.DataFr
     return frame.loc[code_mask & limit_mask, ["ts_code", "name", "limit", "limit_times"]]
 
 
+def _close_by_code(daily_df: pd.DataFrame | None) -> dict[str, float]:
+    if daily_df is None or daily_df.empty:
+        return {}
+    if "ts_code" not in daily_df.columns or "close" not in daily_df.columns:
+        return {}
+
+    frame = daily_df[["ts_code", "close"]].copy()
+    frame["close"] = pd.to_numeric(frame["close"], errors="coerce")
+    frame = frame.dropna(subset=["ts_code", "close"])
+    return {
+        str(row["ts_code"]): float(row["close"])
+        for _, row in frame.drop_duplicates("ts_code", keep="last").iterrows()
+    }
+
+
