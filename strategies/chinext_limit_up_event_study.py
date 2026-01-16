@@ -45,6 +45,87 @@ class EventStudyResult:
     skipped_missing_quote_count: int
 
 
+def build_event_study(
+    trade_dates: list[str],
+    event_start_date: str,
+    event_end_date: str,
+    daily_by_date: dict[str, pd.DataFrame],
+    limit_by_date: dict[str, pd.DataFrame],
+) -> EventStudyResult:
+    """计算创业板涨停事件后 1、3、5 个交易日的收盘表现。"""
+    ordered_dates = sorted({str(value) for value in trade_dates})
+    date_index = {trade_date: index for index, trade_date in enumerate(ordered_dates)}
+    detail_rows: list[dict[str, object]] = []
+    candidate_event_count = 0
+    skipped_incomplete_count = 0
+    skipped_missing_quote_count = 0
+
+    for event_date in ordered_dates:
+        if not event_start_date <= event_date <= event_end_date:
+            continue
+
+        events = _extract_chinext_limit_up_events(limit_by_date.get(event_date))
+        candidate_event_count += len(events)
+        if events.empty:
+            continue
+
+        event_index = date_index[event_date]
+        if event_index + max(HORIZONS) >= len(ordered_dates):
+            skipped_incomplete_count += len(events)
+            continue
+
+        future_dates = {
+            horizon: ordered_dates[event_index + horizon] for horizon in HORIZONS
+        }
+        window_dates = ordered_dates[event_index + 1 : event_index + max(HORIZONS) + 1]
+        event_quotes = _close_by_code(daily_by_date.get(event_date))
+        future_quotes = {
+            trade_date: _close_by_code(daily_by_date.get(trade_date))
+            for trade_date in window_dates
+        }
+
+        for _, event in events.iterrows():
+            ts_code = str(event["ts_code"])
+            event_close = event_quotes.get(ts_code)
+            closes = [future_quotes[trade_date].get(ts_code) for trade_date in window_dates]
+            if not _valid_close(event_close) or any(not _valid_close(value) for value in closes):
+                skipped_missing_quote_count += 1
+                continue
+
+            window_returns = [_return_percent(value, event_close) for value in closes]
+            detail_rows.append(
+                {
+                    "事件日期": event_date,
+                    "股票代码": ts_code,
+                    "股票名称": _optional_text(event.get("name")),
+                    "连板次数": _optional_int(event.get("limit_times")),
+                    "事件日收盘价": _round_number(event_close),
+                    "1日后日期": future_dates[1],
+                    "1日后收盘价": _round_number(closes[0]),
+                    "1日收益率(%)": window_returns[0],
+                    "3日后日期": future_dates[3],
+                    "3日后收盘价": _round_number(closes[2]),
+                    "3日收益率(%)": window_returns[2],
+                    "5日后日期": future_dates[5],
+                    "5日后收盘价": _round_number(closes[4]),
+                    "5日收益率(%)": window_returns[4],
+                    "5日内最高收盘收益率(%)": max(window_returns),
+                    "5日内最低收盘收益率(%)": min(window_returns),
+                }
+            )
+
+    details = pd.DataFrame(detail_rows, columns=DETAIL_COLUMNS)
+    summary = _build_summary(details)
+    return EventStudyResult(
+        details=details,
+        summary=summary,
+        candidate_event_count=candidate_event_count,
+        complete_sample_count=len(details),
+        skipped_incomplete_count=skipped_incomplete_count,
+        skipped_missing_quote_count=skipped_missing_quote_count,
+    )
+
+
 def _extract_chinext_limit_up_events(limit_df: pd.DataFrame | None) -> pd.DataFrame:
     if limit_df is None or limit_df.empty:
         return pd.DataFrame(columns=["ts_code", "name", "limit", "limit_times"])
