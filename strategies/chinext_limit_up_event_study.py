@@ -83,3 +83,18 @@ def _valid_close(value: object) -> bool:
     return value is not None and pd.notna(value) and float(value) > 0
 
 
+def _round_number(value: float) -> float:
+    return round(float(value), 4)
+
+
+def _optional_text(value: object) -> str | None:
+    if value is None or pd.isna(value):
+        return None
+    text = str(value).strip()
+    return text or None
+
+
+def _optional_int(value: object) -> int | None:
+    if value is None or pd.isna(value):
+        return None
+    return int(float(value))
