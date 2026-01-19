@@ -156,6 +156,39 @@ def _close_by_code(daily_df: pd.DataFrame | None) -> dict[str, float]:
     }
 
 
+def _build_summary(details: pd.DataFrame) -> pd.DataFrame:
+    rows = []
+    for horizon in HORIZONS:
+        column = f"{horizon}日收益率(%)"
+        values = pd.to_numeric(details[column], errors="coerce").dropna()
+        if values.empty:
+            rows.append(
+                {
+                    "观察周期": f"{horizon}日",
+                    "样本数": 0,
+                    "平均收益率(%)": None,
+                    "中位数收益率(%)": None,
+                    "正收益比例(%)": None,
+                    "最大收益率(%)": None,
+                    "最小收益率(%)": None,
+                }
+            )
+            continue
+
+        rows.append(
+            {
+                "观察周期": f"{horizon}日",
+                "样本数": int(len(values)),
+                "平均收益率(%)": round(float(values.mean()), 2),
+                "中位数收益率(%)": round(float(values.median()), 2),
+                "正收益比例(%)": round(float((values > 0).mean() * 100), 2),
+                "最大收益率(%)": round(float(values.max()), 2),
+                "最小收益率(%)": round(float(values.min()), 2),
+            }
+        )
+    return pd.DataFrame(rows, columns=SUMMARY_COLUMNS)
+
+
 def _return_percent(close: float, event_close: float) -> float:
     return round((float(close) / float(event_close) - 1) * 100, 2)
 
