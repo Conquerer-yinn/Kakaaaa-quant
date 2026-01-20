@@ -117,3 +117,22 @@ class ChinextLimitUpEventStudyTest(unittest.TestCase):
         self.assertEqual(one_day["正收益比例(%)"], 50.0)
         self.assertEqual(five_day["平均收益率(%)"], 10.0)
         self.assertEqual(five_day["正收益比例(%)"], 100.0)
+
+    def test_skips_event_without_full_five_day_window(self):
+        result = build_event_study(
+            trade_dates=TRADE_DATES,
+            event_start_date="20260108",
+            event_end_date="20260108",
+            daily_by_date={"20260108": daily_frame(**{"300001.SZ": 10.0})},
+            limit_by_date={
+                "20260108": limit_frame(
+                    {"ts_code": "300001.SZ", "name": "样本一", "limit": "U", "limit_times": 1}
+                )
+            },
+        )
+
+        self.assertEqual(result.candidate_event_count, 1)
+        self.assertEqual(result.complete_sample_count, 0)
+        self.assertEqual(result.skipped_incomplete_count, 1)
+        self.assertEqual(result.skipped_missing_quote_count, 0)
+        self.assertTrue(result.details.empty)
