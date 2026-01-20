@@ -84,3 +84,36 @@ class ChinextLimitUpEventStudyTest(unittest.TestCase):
         self.assertEqual(row["5日收益率(%)"], 10.0)
         self.assertEqual(row["5日内最高收盘收益率(%)"], 20.0)
         self.assertEqual(row["5日内最低收盘收益率(%)"], -20.0)
+
+    def test_summary_reports_mean_median_and_positive_rate(self):
+        daily_by_date = {
+            "20260105": daily_frame(**{"300001.SZ": 10.0, "301002.SZ": 20.0}),
+            "20260106": daily_frame(**{"300001.SZ": 11.0, "301002.SZ": 18.0}),
+            "20260107": daily_frame(**{"300001.SZ": 9.0, "301002.SZ": 18.0}),
+            "20260108": daily_frame(**{"300001.SZ": 12.0, "301002.SZ": 16.0}),
+            "20260109": daily_frame(**{"300001.SZ": 8.0, "301002.SZ": 21.0}),
+            "20260112": daily_frame(**{"300001.SZ": 11.0, "301002.SZ": 22.0}),
+        }
+        limit_by_date = {
+            "20260105": limit_frame(
+                {"ts_code": "300001.SZ", "name": "样本一", "limit": "U", "limit_times": 2},
+                {"ts_code": "301002.SZ", "name": "样本二", "limit": "U", "limit_times": 1},
+            )
+        }
+
+        result = build_event_study(
+            trade_dates=TRADE_DATES,
+            event_start_date="20260105",
+            event_end_date="20260105",
+            daily_by_date=daily_by_date,
+            limit_by_date=limit_by_date,
+        )
+
+        one_day = result.summary.loc[result.summary["观察周期"] == "1日"].iloc[0]
+        five_day = result.summary.loc[result.summary["观察周期"] == "5日"].iloc[0]
+        self.assertEqual(one_day["样本数"], 2)
+        self.assertEqual(one_day["平均收益率(%)"], 0.0)
+        self.assertEqual(one_day["中位数收益率(%)"], 0.0)
+        self.assertEqual(one_day["正收益比例(%)"], 50.0)
+        self.assertEqual(five_day["平均收益率(%)"], 10.0)
+        self.assertEqual(five_day["正收益比例(%)"], 100.0)
