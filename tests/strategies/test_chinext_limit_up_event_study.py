@@ -136,3 +136,23 @@ class ChinextLimitUpEventStudyTest(unittest.TestCase):
         self.assertEqual(result.skipped_incomplete_count, 1)
         self.assertEqual(result.skipped_missing_quote_count, 0)
         self.assertTrue(result.details.empty)
+
+    def test_skips_event_when_event_day_quote_is_missing(self):
+        daily_by_date = {
+            trade_date: daily_frame(**{"301999.SZ": 10.0}) for trade_date in TRADE_DATES
+        }
+        result = build_event_study(
+            trade_dates=TRADE_DATES,
+            event_start_date="20260105",
+            event_end_date="20260105",
+            daily_by_date=daily_by_date,
+            limit_by_date={
+                "20260105": limit_frame(
+                    {"ts_code": "300001.SZ", "name": "样本一", "limit": "U", "limit_times": 1}
+                )
+            },
+        )
+
+        self.assertEqual(result.candidate_event_count, 1)
+        self.assertEqual(result.complete_sample_count, 0)
+        self.assertEqual(result.skipped_missing_quote_count, 1)
