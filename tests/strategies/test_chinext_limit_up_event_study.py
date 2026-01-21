@@ -156,3 +156,21 @@ class ChinextLimitUpEventStudyTest(unittest.TestCase):
         self.assertEqual(result.candidate_event_count, 1)
         self.assertEqual(result.complete_sample_count, 0)
         self.assertEqual(result.skipped_missing_quote_count, 1)
+
+    def test_empty_result_preserves_detail_and_summary_columns(self):
+        result = build_event_study(
+            trade_dates=TRADE_DATES,
+            event_start_date="20260105",
+            event_end_date="20260105",
+            daily_by_date={},
+            limit_by_date={},
+        )
+
+        self.assertEqual(result.details.columns.tolist(), DETAIL_COLUMNS)
+        self.assertEqual(result.summary.columns.tolist(), SUMMARY_COLUMNS)
+        self.assertEqual(result.summary["观察周期"].tolist(), ["1日", "3日", "5日"])
+        self.assertEqual(result.summary["样本数"].tolist(), [0, 0, 0])
+
+
+if __name__ == "__main__":
+    unittest.main()
