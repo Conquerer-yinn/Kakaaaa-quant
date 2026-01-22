@@ -68,3 +68,26 @@ def write_event_study_workbook(
     )
 
 
+def find_latest_event_study_workbook(
+    base_dir: str = STRATEGY_RESULTS_DIR,
+) -> EventStudyWorkbook | None:
+    if not os.path.isdir(base_dir):
+        return None
+
+    workbooks = []
+    for file_name in os.listdir(base_dir):
+        match = FILE_PATTERN.fullmatch(file_name)
+        if match is None:
+            continue
+        workbooks.append(
+            EventStudyWorkbook(
+                file_name=file_name,
+                start_date=match.group("start"),
+                end_date=match.group("end"),
+                file_path=os.path.join(base_dir, file_name),
+            )
+        )
+
+    if not workbooks:
+        return None
+    return max(workbooks, key=lambda item: (item.end_date, item.start_date, item.file_name))
