@@ -39,6 +39,22 @@ def normalize_ymd(value: object) -> str | None:
         raise ValueError(f"无法识别日期: {value}") from exc
 
 
+def resolve_study_range(
+    start_date: object = None,
+    end_date: object = None,
+) -> tuple[str, str]:
+    resolved_end = normalize_ymd(end_date) or datetime.today().strftime("%Y%m%d")
+    resolved_start = normalize_ymd(start_date)
+    if resolved_start is None:
+        resolved_start = (
+            datetime.strptime(resolved_end, "%Y%m%d")
+            - timedelta(days=DEFAULT_LOOKBACK_DAYS)
+        ).strftime("%Y%m%d")
+    if resolved_start > resolved_end:
+        raise ValueError("开始日期不能晚于结束日期。")
+    return resolved_start, resolved_end
+
+
 if __name__ == "__main__":
     args = parse_args()
     run_chinext_limit_up_event_study(
