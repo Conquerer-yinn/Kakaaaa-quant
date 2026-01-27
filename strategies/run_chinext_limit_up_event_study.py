@@ -55,6 +55,13 @@ def resolve_study_range(
     return resolved_start, resolved_end
 
 
+def build_fetch_end(end_date: str) -> str:
+    return (
+        datetime.strptime(end_date, "%Y%m%d")
+        + timedelta(days=FUTURE_CALENDAR_BUFFER_DAYS)
+    ).strftime("%Y%m%d")
+
+
 if __name__ == "__main__":
     args = parse_args()
     run_chinext_limit_up_event_study(
