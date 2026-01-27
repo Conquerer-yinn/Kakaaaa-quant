@@ -62,6 +62,47 @@ def build_fetch_end(end_date: str) -> str:
     ).strftime("%Y%m%d")
 
 
+def run_chinext_limit_up_event_study(
+    start_date: object = None,
+    end_date: object = None,
+    base_dir: str = STRATEGY_RESULTS_DIR,
+    engine: TushareDataEngine | None = None,
+) -> str:
+    resolved_start, resolved_end = resolve_study_range(start_date, end_date)
+    fetch_end = build_fetch_end(resolved_end)
+    data_engine = engine or TushareDataEngine()
+    trade_dates = data_engine.get_trade_calendar(resolved_start, fetch_end)
+    if not trade_dates:
+        raise ValueError(f"{resolved_start} 至 {fetch_end} 没有可用交易日。")
+
+    daily_by_date = {}
+    limit_by_date = {}
+    for trade_date in trade_dates:
+        print(f"加载事件研究行情 {trade_date} ...")
+        daily_by_date[trade_date] = data_engine.get_daily_quotes(trade_date)
+        if resolved_start <= trade_date <= resolved_end:
+            limit_by_date[trade_date] = data_engine.get_limit_list(trade_date)
+
+    result = build_event_study(
+        trade_dates=trade_dates,
+        event_start_date=resolved_start,
+        event_end_date=resolved_end,
+        daily_by_date=daily_by_date,
+        limit_by_date=limit_by_date,
+    )
+    output_path = write_event_study_workbook(
+        result=result,
+        start_date=resolved_start,
+        end_date=resolved_end,
+        base_dir=base_dir,
+    )
+    print(
+        f"事件研究完成：候选 {result.candidate_event_count}，"
+        f"完整样本 {result.complete_sample_count}，输出 {output_path}"
+    )
+    return output_path
+
+
 if __name__ == "__main__":
     args = parse_args()
     run_chinext_limit_up_event_study(
