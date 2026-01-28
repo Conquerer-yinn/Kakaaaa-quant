@@ -103,6 +103,14 @@ def run_chinext_limit_up_event_study(
     return output_path
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="研究创业板涨停事件后 1、3、5 日表现。")
+    parser.add_argument("--start-date", default=None, help="YYYYMMDD，默认回看 120 个自然日。")
+    parser.add_argument("--end-date", default=None, help="YYYYMMDD，默认今天。")
+    parser.add_argument("--output-dir", default=STRATEGY_RESULTS_DIR, help="研究工作簿输出目录。")
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
     args = parse_args()
     run_chinext_limit_up_event_study(
