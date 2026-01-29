@@ -289,7 +289,7 @@ Record the event definition, return convention, intentional non-goals, and next 
 
 - [ ] **Step 1: Run all Python tests**
 
-Run: `.venv/Scripts/python -m unittest discover -s tests -p "test_*.py" -v`
+Run: `.venv/Scripts/python -m unittest discover -s tests -t . -p "test_*.py" -v`
 
 Expected: all tests pass with zero failures.
 
