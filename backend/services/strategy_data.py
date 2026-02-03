@@ -89,6 +89,32 @@ def build_chinext_limit_up_study(
     )
 
 
+def _dataframe_records(frame: pd.DataFrame) -> list[dict[str, Any]]:
+    records = []
+    for raw_record in frame.astype(object).where(frame.notna(), None).to_dict(orient="records"):
+        records.append({str(key): _json_value(value) for key, value in raw_record.items()})
+    return records
+
+
+def _json_value(value: Any) -> Any:
+    if value is None or (isinstance(value, float) and pd.isna(value)):
+        return None
+    if isinstance(value, (datetime, date, pd.Timestamp)):
+        return value.isoformat()
+    if hasattr(value, "item"):
+        return value.item()
+    return value
+
+
+def _date_text(value: Any) -> str:
+    if isinstance(value, (datetime, date, pd.Timestamp)):
+        return value.strftime("%Y%m%d")
+    text = str(value).strip()
+    if text.endswith(".0") and text[:-2].isdigit():
+        text = text[:-2]
+    return text
+
+
 def _error_response(message: str) -> StrategyStudyResponse:
     return StrategyStudyResponse(
         success=False,
