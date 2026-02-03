@@ -89,6 +89,58 @@ def build_chinext_limit_up_study(
     )
 
 
+def run_chinext_limit_up_study(
+    request: StrategyStudyRunRequest,
+    base_dir: str = STRATEGY_RESULTS_DIR,
+    runner: Callable[..., str] = run_chinext_limit_up_event_study,
+) -> StrategyStudyResponse:
+    try:
+        runner(
+            start_date=request.start_date,
+            end_date=request.end_date,
+            base_dir=base_dir,
+        )
+    except Exception as exc:
+        return _error_response(f"策略研究运行失败: {exc}")
+    return build_chinext_limit_up_study(base_dir=base_dir)
+
+
+def _build_metadata(
+    run_info_df: pd.DataFrame,
+    summary: list[dict[str, Any]],
+    details_df: pd.DataFrame,
+) -> dict[str, Any]:
+    metadata: dict[str, Any] = {}
+    if {"字段", "值"}.issubset(run_info_df.columns):
+        for _, row in run_info_df.iterrows():
+            key = RUN_INFO_KEYS.get(str(row["字段"]))
+            if key:
+                metadata[key] = _json_value(row["值"])
+
+    for key in ("research_start_date", "research_end_date"):
+        if key in metadata:
+            metadata[key] = _date_text(metadata[key])
+    for key in (
+        "candidate_event_count",
+        "complete_sample_count",
+        "skipped_incomplete_count",
+        "skipped_missing_quote_count",
+    ):
+        if key in metadata and metadata[key] is not None:
+            metadata[key] = int(metadata[key])
+
+    if not details_df.empty and "事件日期" in details_df.columns:
+        dates = details_df["事件日期"].dropna().map(_date_text)
+        metadata["latest_event_date"] = max(dates) if not dates.empty else None
+    else:
+        metadata["latest_event_date"] = None
+
+    five_day = next((row for row in summary if row.get("观察周期") == "5日"), {})
+    metadata["five_day_average_return"] = five_day.get("平均收益率(%)")
+    metadata["five_day_positive_rate"] = five_day.get("正收益比例(%)")
+    return metadata
+
+
 def _normalize_date_columns(frame: pd.DataFrame) -> pd.DataFrame:
     normalized = frame.copy()
     for column in normalized.columns:
