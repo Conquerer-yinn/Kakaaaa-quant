@@ -89,6 +89,16 @@ def build_chinext_limit_up_study(
     )
 
 
+def _normalize_date_columns(frame: pd.DataFrame) -> pd.DataFrame:
+    normalized = frame.copy()
+    for column in normalized.columns:
+        if "日期" in str(column):
+            normalized[column] = normalized[column].map(
+                lambda value: _date_text(value) if pd.notna(value) else value
+            )
+    return normalized
+
+
 def _dataframe_records(frame: pd.DataFrame) -> list[dict[str, Any]]:
     records = []
     for raw_record in frame.astype(object).where(frame.notna(), None).to_dict(orient="records"):
