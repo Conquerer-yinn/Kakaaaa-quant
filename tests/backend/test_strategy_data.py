@@ -59,3 +59,25 @@ class StrategyDataServiceTest(unittest.TestCase):
         self.assertEqual(response.strategy_key, "chinext_limit_up_event_study")
         self.assertIn("尚未生成", response.error_message)
         self.assertEqual(response.details, [])
+
+    def test_reads_latest_workbook_and_limits_recent_details(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            write_event_study_workbook(
+                result_fixture(),
+                start_date="20260101",
+                end_date="20260331",
+                base_dir=temp_dir,
+            )
+
+            response = build_chinext_limit_up_study(limit=1, base_dir=temp_dir)
+
+        self.assertTrue(response.success)
+        self.assertEqual(response.file_name, "创业板涨停事件研究_20260101_20260331.xlsx")
+        self.assertEqual(len(response.summary), 3)
+        self.assertEqual(len(response.details), 1)
+        self.assertEqual(response.details[0]["事件日期"], "20260106")
+        self.assertEqual(response.metadata["candidate_event_count"], 3)
+        self.assertEqual(response.metadata["complete_sample_count"], 2)
+        self.assertEqual(response.metadata["latest_event_date"], "20260106")
+        self.assertEqual(response.metadata["five_day_average_return"], 7.0)
+        self.assertEqual(response.metadata["five_day_positive_rate"], 100.0)
