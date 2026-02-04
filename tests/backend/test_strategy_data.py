@@ -1,0 +1,61 @@
+import tempfile
+import unittest
+
+import pandas as pd
+
+from backend.schemas.strategies import StrategyStudyRunRequest
+from backend.services.strategy_data import (
+    build_chinext_limit_up_study,
+    run_chinext_limit_up_study,
+)
+from strategies.chinext_limit_up_event_study import EventStudyResult
+from strategies.chinext_limit_up_workbook import write_event_study_workbook
+
+
+def result_fixture() -> EventStudyResult:
+    details = pd.DataFrame(
+        [
+            {
+                "事件日期": "20260105",
+                "股票代码": "300001.SZ",
+                "股票名称": "样本一",
+                "1日收益率(%)": 5.0,
+                "3日收益率(%)": 8.0,
+                "5日收益率(%)": 10.0,
+            },
+            {
+                "事件日期": "20260106",
+                "股票代码": "301002.SZ",
+                "股票名称": "样本二",
+                "1日收益率(%)": -2.0,
+                "3日收益率(%)": 1.0,
+                "5日收益率(%)": 4.0,
+            },
+        ]
+    )
+    summary = pd.DataFrame(
+        [
+            {"观察周期": "1日", "样本数": 2, "平均收益率(%)": 1.5, "正收益比例(%)": 50.0},
+            {"观察周期": "3日", "样本数": 2, "平均收益率(%)": 4.5, "正收益比例(%)": 100.0},
+            {"观察周期": "5日", "样本数": 2, "平均收益率(%)": 7.0, "正收益比例(%)": 100.0},
+        ]
+    )
+    return EventStudyResult(
+        details=details,
+        summary=summary,
+        candidate_event_count=3,
+        complete_sample_count=2,
+        skipped_incomplete_count=1,
+        skipped_missing_quote_count=0,
+    )
+
+
+class StrategyDataServiceTest(unittest.TestCase):
+    def test_returns_clear_empty_state(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            response = build_chinext_limit_up_study(base_dir=temp_dir)
+
+        self.assertFalse(response.success)
+        self.assertEqual(response.strategy_key, "chinext_limit_up_event_study")
+        self.assertIn("尚未生成", response.error_message)
+        self.assertEqual(response.details, [])
