@@ -18,9 +18,13 @@ from backend.schemas.tasks import (
     TaskListResponse,
     TaskRunResponse,
 )
+from backend.schemas.strategies import StrategyStudyResponse, StrategyStudyRunRequest
 from backend.services.frontend_data import build_dashboard_summary, build_market_sentiment_history
 from backend.services.push_cards import list_push_cards, refresh_push_card, send_push_card
-from backend.services.strategy_data import build_strategy_list
+from backend.services.strategy_data import (
+    build_chinext_limit_up_study,
+    build_strategy_list,
+)
 from backend.services.task_manager import market_sentiment_task_manager
 from backend.services.task_registry import list_task_metadata
 from backend.services.task_runner import run_daily_basics_task
@@ -53,6 +57,15 @@ def get_dashboard_summary():
 @router.get("/market/history/market-sentiment", response_model=HistoryDatasetResponse, tags=["frontend"])
 def get_market_sentiment_history(limit: int = Query(default=20, ge=10, le=120)):
     return build_market_sentiment_history(limit=limit)
+
+
+@router.get(
+    "/strategies/chinext-limit-up-event-study",
+    response_model=StrategyStudyResponse,
+    tags=["strategies"],
+)
+def get_chinext_limit_up_event_study(limit: int = Query(default=100, ge=10, le=500)):
+    return build_chinext_limit_up_study(limit=limit)
 
 
 @router.get("/market/push/cards", response_model=PushCardListResponse, tags=["frontend"])
