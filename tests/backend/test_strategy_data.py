@@ -81,3 +81,41 @@ class StrategyDataServiceTest(unittest.TestCase):
         self.assertEqual(response.metadata["latest_event_date"], "20260106")
         self.assertEqual(response.metadata["five_day_average_return"], 7.0)
         self.assertEqual(response.metadata["five_day_positive_rate"], 100.0)
+
+    def test_run_service_uses_injected_runner_then_returns_result(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            calls = []
+
+            def fake_runner(start_date, end_date, base_dir):
+                calls.append((start_date, end_date, base_dir))
+                return write_event_study_workbook(
+                    result_fixture(),
+                    start_date="20260101",
+                    end_date="20260331",
+                    base_dir=base_dir,
+                )
+
+            response = run_chinext_limit_up_study(
+                StrategyStudyRunRequest(start_date="20260101", end_date="20260331"),
+                base_dir=temp_dir,
+                runner=fake_runner,
+            )
+
+        self.assertTrue(response.success)
+        self.assertEqual(calls, [("20260101", "20260331", temp_dir)])
+
+    def test_run_service_returns_domain_error(self):
+        def failing_runner(start_date, end_date, base_dir):
+            raise ValueError("TUSHARE_TOKEN is not configured.")
+
+        response = run_chinext_limit_up_study(
+            StrategyStudyRunRequest(),
+            runner=failing_runner,
+        )
+
+        self.assertFalse(response.success)
+        self.assertIn("TUSHARE_TOKEN", response.error_message)
+
+
+if __name__ == "__main__":
+    unittest.main()
