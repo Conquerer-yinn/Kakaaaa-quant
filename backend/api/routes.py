@@ -24,6 +24,7 @@ from backend.services.push_cards import list_push_cards, refresh_push_card, send
 from backend.services.strategy_data import (
     build_chinext_limit_up_study,
     build_strategy_list,
+    run_chinext_limit_up_study,
 )
 from backend.services.task_manager import market_sentiment_task_manager
 from backend.services.task_registry import list_task_metadata
@@ -66,6 +67,15 @@ def get_market_sentiment_history(limit: int = Query(default=20, ge=10, le=120)):
 )
 def get_chinext_limit_up_event_study(limit: int = Query(default=100, ge=10, le=500)):
     return build_chinext_limit_up_study(limit=limit)
+
+
+@router.post(
+    "/strategies/chinext-limit-up-event-study/run",
+    response_model=StrategyStudyResponse,
+    tags=["strategies"],
+)
+def run_chinext_limit_up_event_study_route(request: StrategyStudyRunRequest):
+    return run_chinext_limit_up_study(request)
 
 
 @router.get("/market/push/cards", response_model=PushCardListResponse, tags=["frontend"])
