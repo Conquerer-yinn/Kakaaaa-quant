@@ -51,15 +51,15 @@ def build_dashboard_summary() -> DashboardSummaryResponse:
                 status="v1",
             ),
             SummaryCapability(
-                title="前端展示壳",
-                description="这一版先服务真实演示与 review，不往重后台方向扩张。",
+                title="策略事件研究",
+                description="第一条创业板涨停后 5 日事件研究已接通 Excel、API 与前端复盘。",
                 status="v1",
             ),
         ],
         quick_links=[
             SummaryLink(label="历史数据", path="/market/history", description="查看历史主表里最近 20 个交易日数据。"),
             SummaryLink(label="推送卡片", path="/market/push", description="预览三类卡片，执行刷新与发送。"),
-            SummaryLink(label="策略占位", path="/strategies", description="查看策略方向说明与后续规划。"),
+            SummaryLink(label="策略研究", path="/strategies", description="查看创业板涨停事件统计与最近完整样本。"),
         ],
     )
 

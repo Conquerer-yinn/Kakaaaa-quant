@@ -30,6 +30,15 @@ export const api = {
   getStrategies() {
     return request("/strategies");
   },
+  getChinextLimitUpStudy(limit = 100) {
+    return request(`/strategies/chinext-limit-up-event-study?limit=${limit}`);
+  },
+  runChinextLimitUpStudy(payload = {}) {
+    return request("/strategies/chinext-limit-up-event-study/run", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
   startMarketSentimentTask(payload = {}) {
     return request("/tasks/market-sentiment/run", {
       method: "POST",
