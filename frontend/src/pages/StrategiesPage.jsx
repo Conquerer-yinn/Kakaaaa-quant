@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { api } from "../api/client";
+import { DataTable } from "../components/DataTable";
 import { MetricGrid } from "../components/MetricGrid";
 import { SectionCard } from "../components/SectionCard";
 import { StatusBadge } from "../components/StatusBadge";
@@ -53,6 +54,7 @@ export function StrategiesPage() {
     () => buildStrategyMetrics(study?.metadata || {}),
     [study?.metadata],
   );
+  const summaryColumns = study?.summary?.length ? Object.keys(study.summary[0]) : [];
 
   return (
     <div className="page-stack">
@@ -60,7 +62,7 @@ export function StrategiesPage() {
         <div>
           <p className="eyebrow">策略研究 · 第一条真实闭环</p>
           <h2>创业板涨停后 5 日事件研究</h2>
-          <p>识别创业板涨停样本，观察事件后第 1、3、5 个交易日的表现，并沉淀为可复盘 Excel。</p>
+          <p>识别创业板涨停样本，观察事件后第 1、3、5 个交易日的收盘表现，并沉淀为可复盘 Excel。</p>
         </div>
         <button className="primary-button" type="button" onClick={runStudy} disabled={running || loading}>
           {running ? "研究运行中…" : "运行最近 120 天研究"}
@@ -76,26 +78,37 @@ export function StrategiesPage() {
       {error ? <div className="feedback error">{error}</div> : null}
 
       {!loading && study?.success ? (
-        <SectionCard
-          title="研究概览"
-          subtitle={`结果文件：${study.file_name || "-"} · 更新时间：${study.updated_at || "-"}`}
-        >
-          <MetricGrid items={metrics} />
-          <div className="research-definition-grid">
-            <article className="text-panel muted">
-              <strong>事件定义</strong>
-              <p>股票代码以 300/301 开头，且 Tushare 涨跌停明细标记为涨停。</p>
-            </article>
-            <article className="text-panel muted">
-              <strong>完整样本</strong>
-              <p>事件日有有效收盘价，并且事件后存在完整 5 个交易日行情。</p>
-            </article>
-            <article className="text-panel muted">
-              <strong>收益口径</strong>
-              <p>以事件日收盘价为基准，计算未来第 1、3、5 个交易日的收盘收益。</p>
-            </article>
-          </div>
-        </SectionCard>
+        <>
+          <SectionCard
+            title="研究概览"
+            subtitle={`结果文件：${study.file_name || "-"} · 更新时间：${study.updated_at || "-"}`}
+            action={<StatusBadge status="v1" label="第一版可用" />}
+          >
+            <MetricGrid items={metrics} />
+            <div className="research-definition-grid">
+              <article className="text-panel muted">
+                <strong>事件定义</strong>
+                <p>股票代码以 300/301 开头，且 Tushare 涨跌停明细标记为涨停。</p>
+              </article>
+              <article className="text-panel muted">
+                <strong>完整样本</strong>
+                <p>事件日有有效收盘价，并且事件后存在完整 5 个交易日行情。</p>
+              </article>
+              <article className="text-panel muted">
+                <strong>收益口径</strong>
+                <p>以事件日收盘价为基准，计算未来第 1、3、5 个交易日的收盘收益。</p>
+              </article>
+            </div>
+          </SectionCard>
+
+          <SectionCard title="周期统计" subtitle="均值、中位数、正收益比例及收益区间。">
+            <DataTable columns={summaryColumns} rows={study.summary || []} />
+          </SectionCard>
+
+          <SectionCard title="最近事件样本" subtitle="默认展示工作簿中最近 100 条完整事件。">
+            <DataTable columns={study.detail_columns || []} rows={study.details || []} />
+          </SectionCard>
+        </>
       ) : null}
 
       {!loading && study && !study.success ? (
