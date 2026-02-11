@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { api } from "../api/client";
+import { MetricGrid } from "../components/MetricGrid";
 import { SectionCard } from "../components/SectionCard";
 import { StatusBadge } from "../components/StatusBadge";
+import { buildStrategyMetrics } from "./strategyViewModel";
 
 
 export function StrategiesPage() {
@@ -47,6 +49,11 @@ export function StrategiesPage() {
     }
   };
 
+  const metrics = useMemo(
+    () => buildStrategyMetrics(study?.metadata || {}),
+    [study?.metadata],
+  );
+
   return (
     <div className="page-stack">
       <section className="page-header strategy-header">
@@ -60,8 +67,36 @@ export function StrategiesPage() {
         </button>
       </section>
 
+      <div className="feedback info strategy-disclaimer">
+        <strong>研究边界：</strong>
+        这里展示的是历史事件统计，不包含交易成本、滑点、仓位或盘中成交模拟，也不代表策略已经验证盈利。
+      </div>
+
       {loading ? <div className="feedback info">正在读取最新策略研究结果…</div> : null}
       {error ? <div className="feedback error">{error}</div> : null}
+
+      {!loading && study?.success ? (
+        <SectionCard
+          title="研究概览"
+          subtitle={`结果文件：${study.file_name || "-"} · 更新时间：${study.updated_at || "-"}`}
+        >
+          <MetricGrid items={metrics} />
+          <div className="research-definition-grid">
+            <article className="text-panel muted">
+              <strong>事件定义</strong>
+              <p>股票代码以 300/301 开头，且 Tushare 涨跌停明细标记为涨停。</p>
+            </article>
+            <article className="text-panel muted">
+              <strong>完整样本</strong>
+              <p>事件日有有效收盘价，并且事件后存在完整 5 个交易日行情。</p>
+            </article>
+            <article className="text-panel muted">
+              <strong>收益口径</strong>
+              <p>以事件日收盘价为基准，计算未来第 1、3、5 个交易日的收盘收益。</p>
+            </article>
+          </div>
+        </SectionCard>
+      ) : null}
 
       {!loading && study && !study.success ? (
         <SectionCard title="尚无研究结果" subtitle="首次运行会拉取真实 Tushare 数据并生成 Excel。">
