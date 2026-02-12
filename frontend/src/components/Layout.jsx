@@ -1,11 +1,6 @@
 import { NavLink } from "react-router-dom";
 
-const NAV_ITEMS = [
-  { to: "/", label: "项目首页", end: true },
-  { to: "/market/history", label: "历史数据" },
-  { to: "/market/push", label: "推送卡片" },
-  { to: "/strategies", label: "策略占位" },
-];
+import { NAV_ITEMS } from "./layoutNavigation";
 
 export function Layout({ children }) {
   return (
