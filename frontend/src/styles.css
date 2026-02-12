@@ -495,6 +495,28 @@ a {
   background: rgba(247, 249, 245, 0.9);
 }
 
+.strategy-header {
+  align-items: center;
+}
+
+.strategy-header .primary-button {
+  flex: 0 0 auto;
+}
+
+.strategy-disclaimer {
+  line-height: 1.7;
+}
+
+.research-definition-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.research-definition-grid .text-panel {
+  margin-top: 0;
+}
+
 .json-panel {
   margin-top: 14px;
   padding: 12px 16px;
@@ -541,7 +563,8 @@ a {
   .topbar,
   .hero-panel,
   .page-header,
-  .grid-two {
+  .grid-two,
+  .research-definition-grid {
     grid-template-columns: 1fr;
     flex-direction: column;
   }
