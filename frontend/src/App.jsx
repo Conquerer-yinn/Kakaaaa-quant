@@ -5,10 +5,11 @@ import { HomePage } from "./pages/HomePage";
 import { HistoryPage } from "./pages/HistoryPage";
 import { PushPage } from "./pages/PushPage";
 import { StrategiesPage } from "./pages/StrategiesPage";
+import { ROUTER_FUTURE } from "./routerFuture";
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter future={ROUTER_FUTURE}>
       <Layout>
         <Routes>
           <Route path="/" element={<HomePage />} />
