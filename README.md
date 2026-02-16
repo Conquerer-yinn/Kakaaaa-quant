@@ -72,7 +72,6 @@ Kaka_Quant/
 - `GET /dashboard/summary`
 - `GET /market/history/market-sentiment`
 - `GET /market/push/cards`
-- `GET /strategies`
 
 #### 卡片刷新与发送接口
 
@@ -83,6 +82,11 @@ Kaka_Quant/
 - `POST /market/push/intraday/refresh`
 - `POST /market/push/intraday/send`
 
+#### 策略研究接口
+
+- `GET /strategies/chinext-limit-up-event-study`
+- `POST /strategies/chinext-limit-up-event-study/run`
+
 ### 3. React 前端第一版
 
 前端当前页面包括：
@@ -90,7 +94,7 @@ Kaka_Quant/
 - `/` 项目首页
 - `/market/history` 历史数据页
 - `/market/push` 推送卡片页
-- `/strategies` 策略页（已接入注册表真实数据）
+- `/strategies` 策略事件研究页
 
 当前前端重点：
 
@@ -100,6 +104,7 @@ Kaka_Quant/
 - 点击表头里的数值列，可切换当前柱状图展示指标
 - 历史页支持发起 `market-sentiment` 后台任务，并轮询状态、请求取消
 - 推送页支持盘后、竞价、盘中三类卡片的预览、刷新、发送
+- 策略页支持运行并复盘创业板涨停后 1、3、5 日事件研究
 
 ### 4. 三类飞书卡片
 
@@ -123,19 +128,20 @@ Kaka_Quant/
 
 卡片当前直接基于原始数据层和指标计算层生成，不再反向依赖 Excel 视图层。
 
-### 5. 策略主线
+### 5. 第一条真实策略研究闭环
 
-- `strategies/strategy_registry.yaml` 管理策略的启用与推送
-- `strategies/run_strategies.py` 按注册表批量执行，失败互相隔离
-- 已落地 `example_strategy`（涨停放量筛选）与 `limit_up_follow`（连板隔日反馈）
-- 策略结果统一输出到 `storage/data_master/策略数据_策略名.xlsx`
+`strategies/` 已落地创业板涨停后 5 日事件研究：
 
-### 6. 测试与持续集成
+- 从 Tushare 涨跌停明细识别创业板涨停事件
+- 只统计未来 5 个交易日行情完整的样本
+- 排除 ST 和上市未满 60 个自然日的样本
+- 计算事件后第 1、3、5 日原始收益及相对 `399006.SZ` 的超额收益
+- 按首板/连板及弱/中/强市场环境输出分组统计
+- 输出 `研究摘要`、`分组统计`、`样本质量`、`事件明细`、`运行信息` 五个 Excel sheet
+- 通过 FastAPI 读取或运行
+- 在 `/strategies` 页面展示真实结果，不写入假数据
 
-- `pytest`：覆盖配置、数据引擎、存储、指标、卡片、任务与 API（`tests/`）
-- `ruff check .`：语法级静态闸门
-- GitHub Actions：后端测试、前端构建校验（`.github/workflows/`）
-- Docker：`docker compose up --build` 一键起前后端
+该功能属于事件研究，不等同于完整交易策略或收益承诺。市场环境阈值固定为涨停数 `<=30`、`31–60`、`>60`，用于研究分组而非自动交易信号。
 
 ## 如何启动项目
 
@@ -249,13 +255,12 @@ POST /tasks/market-sentiment/run
 如果你刚接手这个项目，建议按这个顺序读：
 
 1. `README.md`
-2. `docs/ARCHITECTURE.md`
-3. `docs/RUNBOOK.md`
-4. `backend/README.md`
-5. `frontend/README.md`
-6. `market/jobs/README.md`
-7. `project_memory/handoff/PROJECT_STATUS.md`
-8. `project_memory/handoff/AI_HANDOFF.md`
+2. `backend/README.md`
+3. `frontend/README.md`
+4. `market/jobs/README.md`
+5. `DEVELOPMENT_PLAN.md`
+6. `project_memory/handoff/PROJECT_STATUS.md`
+7. `project_memory/handoff/AI_HANDOFF.md`
 
 ## 说明
 
