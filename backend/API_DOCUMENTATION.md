@@ -239,13 +239,43 @@
 - `send_response`：发送接口返回结果，仅 `send` 动作有值
 - `error_message`：失败原因
 
-## 4. 当前前端实际使用的接口
+## 4. 策略研究接口
+
+### 读取最新结果
+
+- `GET /strategies/chinext-limit-up-event-study?limit=100`
+
+返回最新事件研究工作簿中的：
+
+- `summary`：1、3、5 日周期统计
+- `metadata`：候选事件数、完整样本数、跳过数量、最新事件日等
+- `detail_columns`：事件明细列名
+- `details`：最近完整事件
+
+### 运行研究
+
+- `POST /strategies/chinext-limit-up-event-study/run`
+
+请求体：
+
+```json
+{
+  "start_date": "20260101",
+  "end_date": "20260331"
+}
+```
+
+两个字段都可省略；默认结束到今天，开始日期回看 120 个自然日。当前接口同步执行，需要有效的 `TUSHARE_TOKEN`。
+
+## 5. 当前前端实际使用的接口
 
 当前 `frontend/src/api/client.js` 已消费这些接口：
 
 - `GET /dashboard/summary`
 - `GET /market/history/market-sentiment`
 - `GET /market/push/cards`
+- `GET /strategies/chinext-limit-up-event-study`
+- `POST /strategies/chinext-limit-up-event-study/run`
 - `POST /tasks/market-sentiment/run`
 - `GET /tasks/market-sentiment/{task_id}`
 - `POST /tasks/market-sentiment/{task_id}/cancel`
@@ -254,7 +284,7 @@
 
 这意味着当前接口文档维护应以后端为主，前端只保留调用层和必要的参数约束，不要在前端再复制一份主文档。
 
-## 5. 文档放置约定
+## 6. 文档放置约定
 
 当前项目建议这样放：
 
@@ -270,7 +300,7 @@
 
 如果后续接口明显增多，再考虑把接口文档统一收口到仓库根目录 `docs/api/`。当前阶段没有必要单独抽一个重文档目录。
 
-## 6. 当前维护原则
+## 7. 当前维护原则
 
 新增或修改接口时，至少同步更新这三处中的两处：
 

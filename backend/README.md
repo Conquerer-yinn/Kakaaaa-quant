@@ -107,6 +107,12 @@ backend/
 - `GET /dashboard/summary`
 - `GET /market/history/market-sentiment`
 - `GET /market/push/cards`
+- `GET /strategies/chinext-limit-up-event-study`
+
+### 策略研究接口
+
+- `GET /strategies/chinext-limit-up-event-study`
+- `POST /strategies/chinext-limit-up-event-study/run`
 
 ### 卡片刷新与发送接口
 
@@ -152,3 +158,5 @@ uvicorn backend.main:app --reload
 2. 盘中卡片可能因为实时权限不足而降级。
 3. 历史读取接口依赖当前历史主表已存在；如果没有文件，需要先触发一次 `market-sentiment` 更新任务。
 4. 当前仍有一个遗留问题：历史主表更新后，Excel 可能修复 `externalLinks` 缓存，且图表未必自动刷新，详见 `project_memory/decisions/2026-04-02_历史主表更新后Excel外部链接与图表遗留问题.md`。
+5. 策略研究运行依赖有效的 `TUSHARE_TOKEN`；仓库不再内置默认 Token。
+6. 策略研究接口当前同步执行，符合轻量服务边界；如果后续实测耗时影响使用，再升级为后台任务。

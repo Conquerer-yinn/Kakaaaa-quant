@@ -14,7 +14,7 @@
 2. 历史数据页：只展示 `market-sentiment`，固定读取最新历史主表里的最近 20 个交易日数据。
 3. 历史数据页：支持发起 `market-sentiment` 后台更新、轮询状态、请求取消。
 4. 推送卡片页：展示盘后、竞价、盘中三类卡片，支持刷新和发送到飞书。
-5. 策略页：先做占位说明，不堆假数据。
+5. 策略页：运行并展示创业板涨停后 1、3、5 日事件研究，不堆假数据。
 
 ## 目录怎么理解
 
@@ -42,7 +42,7 @@ frontend/
         ├── HomePage.jsx       # 首页
         ├── HistoryPage.jsx    # 历史数据页
         ├── PushPage.jsx       # 推送卡片页
-        └── StrategiesPage.jsx # 策略占位页
+        └── StrategiesPage.jsx # 策略事件研究页
 ```
 
 ## 小白可以怎么读这套前端
@@ -94,6 +94,15 @@ frontend/
 3. 点击刷新会调用 `/market/push/{card_type}/refresh`
 4. 点击发送会调用 `/market/push/{card_type}/send`
 5. 默认使用后端配置中的 `FEISHU_BOT_WEBHOOK`
+
+## 策略页的数据流
+
+1. 首屏请求 `GET /strategies/chinext-limit-up-event-study`
+2. 没有工作簿时展示首次运行提示，不生成假样本
+3. 点击运行会调用 `POST /strategies/chinext-limit-up-event-study/run`
+4. 后端同步拉取数据、计算事件研究并生成 Excel
+5. 页面展示研究元数据、周期统计和最近完整事件
+6. 页面始终保留“历史研究不代表已验证盈利”的边界说明
 
 ## 如何启动
 
