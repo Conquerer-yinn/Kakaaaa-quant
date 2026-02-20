@@ -1,14 +1,53 @@
-# 策略目录
+# 策略研究目录
 
-这个目录用于存放策略代码，以及与策略直接相关的研究记录。
+这个目录存放策略研究代码、贴近代码的研究说明，以及可纳入日常运行的策略注册信息。
 
-建议做法：
+## 已落地研究
 
-1. 策略代码放在这里
-2. 策略阶段性结论、问题记录、灵感笔记，也直接放在这里
-3. 是否纳入日常运行，由 `strategies/strategy_registry.yaml` 控制
+### 创业板涨停后 5 日事件研究
 
-这样记录会更贴近代码，后续回看也更方便。
+入口：`strategies/run_chinext_limit_up_event_study.py`
+
+研究口径：
+
+1. 识别代码以 `300`、`301` 开头且 `limit_list_d.limit == U` 的涨停事件。
+2. 只保留事件日有有效收盘价、且之后存在完整 5 个交易日行情的样本。
+3. 计算事件后第 1、3、5 个交易日的收盘收益率。
+4. 计算 5 日窗口内最高和最低收盘收益率。
+5. 输出汇总统计、事件明细和运行信息到 Excel。
+
+运行最近 120 个自然日：
+
+```powershell
+.venv\Scripts\python.exe strategies\run_chinext_limit_up_event_study.py
+```
+
+运行指定区间：
+
+```powershell
+.venv\Scripts\python.exe strategies\run_chinext_limit_up_event_study.py `
+  --start-date 20260101 `
+  --end-date 20260331
+```
+
+输出目录：`storage/strategy_results/`。
+
+工作簿包含：
+
+- `研究摘要`
+- `事件明细`
+- `运行信息`
+
+也可以在 `/strategies` 页面运行和查看，或通过以下 API 调用：
+
+- `GET /strategies/chinext-limit-up-event-study`
+- `POST /strategies/chinext-limit-up-event-study/run`
+
+## 研究边界
+
+当前结果属于事件研究，不包含交易成本、滑点、仓位、买卖执行或盘中成交模拟，不能直接解释为已验证盈利的交易策略。
+
+是否纳入后续日常运行，由 `strategies/strategy_registry.yaml` 控制。第一版默认 `enabled: false`，避免研究任务被误当成正式交易任务。
 
 ## 研究记录规范
 
@@ -23,16 +62,16 @@
 
 1. 策略核心逻辑写成纯函数：输入 DataFrame，输出 DataFrame，方便离线测试。
 2. 需要取数时统一走 `data_engine/`，不在策略里直接调用第三方接口。
-3. 结果输出统一走 `strategies/strategy_output.py`，不自行管理文件路径。
+3. 简单筛选类策略结果统一走 `strategies/strategy_output.py`；事件研究类输出到 `storage/strategy_results/`。
 4. 需要被 `run_strategies.py` 调度的策略，暴露 `run(trade_date)` 入口。
 
 ## 研究 -> 日常运行的完整流程
 
 1. **研究**：写 `策略名.py`，核心筛选逻辑保持纯函数，用测试或小样本验证口径。
 2. **登记**：在 `strategy_registry.yaml` 中登记，`enabled: false` 起步。
-3. **试运行**：手动 `python strategies/策略名.py` 或 `python strategies/run_strategies.py --trade-date YYYYMMDD` 观察输出。
+3. **试运行**：手动运行脚本或 `python strategies/run_strategies.py --trade-date YYYYMMDD` 观察输出。
 4. **启用**：确认稳定后把 `enabled` 改为 `true`，视需要开 `push`。
-5. **复盘**：结果统一落在 `storage/data_master/策略数据_策略名.xlsx`，人工复盘结论写回 `策略名.md`。
+5. **复盘**：结果落表后做人工复盘，结论写回 `策略名.md`。
 
 ## 复盘笔记模板
 
