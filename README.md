@@ -163,7 +163,7 @@ pip install -r requirements.txt
 - `FEISHU_BOT_WEBHOOK`
 - 可选：`TUSHARE_REQUEST_DELAY`
 
-目前项目把默认配置写在 [`common/config.py`](./common/config.py) 中；如果后续要切换到 `.env` 方案，也建议保持字段名一致。
+敏感配置只从环境变量读取，仓库内不提供 Token 或 Webhook 默认值。自定义 `TUSHARE_HTTP_URL` 默认关闭，启用时必须使用 HTTPS。字段示例见 [`.env.example`](./.env.example)。
 
 ### 3. 启动后端
 
