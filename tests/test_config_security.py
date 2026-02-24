@@ -56,3 +56,37 @@ class ConfigSecurityTest(unittest.TestCase):
         with patch("data_engine.tushare_api.ts.pro_api"):
             with self.assertRaisesRegex(ValueError, "HTTPS"):
                 TushareDataEngine(token="test-token", http_url="http://example.com")
+
+    def test_tracked_text_files_do_not_contain_live_credentials(self):
+        raw_paths = subprocess.check_output(
+            ["git", "ls-files", "-z"],
+            cwd=PROJECT_ROOT,
+        )
+        tracked_paths = [os.fsdecode(value) for value in raw_paths.split(b"\0") if value]
+        patterns = {
+            "Feishu webhook": re.compile(
+                r"https://open\.feishu\.cn/open-apis/bot/v2/hook/"
+                r"(?!your_webhook_id_here)[^\s`\"']{12,}"
+            ),
+            "Tushare token assignment": re.compile(
+                r"TUSHARE_TOKEN\s*=\s*[\"']?[A-Za-z0-9]{20,}"
+            ),
+        }
+        findings = []
+        for relative_path in tracked_paths:
+            path = PROJECT_ROOT / relative_path
+            if not path.is_file():
+                continue
+            try:
+                content = path.read_text(encoding="utf-8-sig")
+            except UnicodeDecodeError:
+                continue
+            for label, pattern in patterns.items():
+                if pattern.search(content):
+                    findings.append(f"{relative_path}: {label}")
+
+        self.assertEqual(findings, [])
+
+
+if __name__ == "__main__":
+    unittest.main()
