@@ -61,11 +61,17 @@ def build_chinext_limit_up_study(
     latest = find_latest_event_study_workbook(base_dir=base_dir)
     if latest is None:
         return _error_response("尚未生成创业板涨停事件研究结果，请先运行一次研究任务。")
+    return _build_study_from_workbook(latest.file_path, limit=limit)
 
+
+def _build_study_from_workbook(
+    file_path: str,
+    limit: int = 100,
+) -> StrategyStudyResponse:
     try:
-        summary_df = pd.read_excel(latest.file_path, sheet_name="研究摘要")
-        details_df = pd.read_excel(latest.file_path, sheet_name="事件明细")
-        run_info_df = pd.read_excel(latest.file_path, sheet_name="运行信息")
+        summary_df = pd.read_excel(file_path, sheet_name="研究摘要")
+        details_df = pd.read_excel(file_path, sheet_name="事件明细")
+        run_info_df = pd.read_excel(file_path, sheet_name="运行信息")
     except (OSError, ValueError) as exc:
         return _error_response(f"读取策略研究工作簿失败: {exc}")
 
@@ -79,8 +85,8 @@ def build_chinext_limit_up_study(
         strategy_key=STRATEGY_KEY,
         title=STRATEGY_TITLE,
         description=STRATEGY_DESCRIPTION,
-        file_name=latest.file_name,
-        updated_at=datetime.fromtimestamp(os.path.getmtime(latest.file_path)).strftime("%Y-%m-%d %H:%M:%S"),
+        file_name=os.path.basename(file_path),
+        updated_at=datetime.fromtimestamp(os.path.getmtime(file_path)).strftime("%Y-%m-%d %H:%M:%S"),
         summary=summary,
         metadata=metadata,
         detail_columns=[str(column) for column in recent_details.columns],
@@ -95,14 +101,14 @@ def run_chinext_limit_up_study(
     runner: Callable[..., str] = run_chinext_limit_up_event_study,
 ) -> StrategyStudyResponse:
     try:
-        runner(
+        output_path = runner(
             start_date=request.start_date,
             end_date=request.end_date,
             base_dir=base_dir,
         )
     except Exception as exc:
         return _error_response(f"策略研究运行失败: {exc}")
-    return build_chinext_limit_up_study(base_dir=base_dir)
+    return _build_study_from_workbook(output_path)
 
 
 def _build_metadata(

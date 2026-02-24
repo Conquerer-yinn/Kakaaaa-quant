@@ -104,6 +104,32 @@ class StrategyDataServiceTest(unittest.TestCase):
         self.assertTrue(response.success)
         self.assertEqual(calls, [("20260101", "20260331", temp_dir)])
 
+    def test_run_service_reads_the_workbook_returned_by_runner(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            write_event_study_workbook(
+                result_fixture(),
+                start_date="20261201",
+                end_date="20261231",
+                base_dir=temp_dir,
+            )
+
+            def older_runner(start_date, end_date, base_dir):
+                return write_event_study_workbook(
+                    result_fixture(),
+                    start_date="20260101",
+                    end_date="20260131",
+                    base_dir=base_dir,
+                )
+
+            response = run_chinext_limit_up_study(
+                StrategyStudyRunRequest(start_date="20260101", end_date="20260131"),
+                base_dir=temp_dir,
+                runner=older_runner,
+            )
+
+        self.assertTrue(response.success)
+        self.assertEqual(response.file_name, "创业板涨停事件研究_20260101_20260131.xlsx")
+
     def test_run_service_returns_domain_error(self):
         def failing_runner(start_date, end_date, base_dir):
             raise ValueError("TUSHARE_TOKEN is not configured.")
