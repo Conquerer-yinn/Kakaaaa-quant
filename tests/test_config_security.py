@@ -1,6 +1,12 @@
 import ast
+import os
+import re
+import subprocess
 import unittest
 from pathlib import Path
+from unittest.mock import patch
+
+from data_engine.tushare_api import TushareDataEngine
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -35,6 +41,18 @@ class ConfigSecurityTest(unittest.TestCase):
         self.assertIn("TUSHARE_TOKEN=", content)
         self.assertIn("FEISHU_BOT_WEBHOOK=", content)
 
+    def test_custom_tushare_gateway_is_opt_in(self):
+        assignments = load_assignments("common/config.py")
+        call = assignments["TUSHARE_HTTP_URL"]
 
-if __name__ == "__main__":
-    unittest.main()
+        self.assertIsInstance(call, ast.Call)
+        self.assertEqual(len(call.args), 2)
+        self.assertIsInstance(call.args[1], ast.Constant)
+        self.assertEqual(call.args[1].value, "")
+        env_example = (PROJECT_ROOT / ".env.example").read_text(encoding="utf-8")
+        self.assertIn("TUSHARE_HTTP_URL=\n", env_example.replace("\r\n", "\n"))
+
+    def test_data_engine_rejects_cleartext_custom_gateway(self):
+        with patch("data_engine.tushare_api.ts.pro_api"):
+            with self.assertRaisesRegex(ValueError, "HTTPS"):
+                TushareDataEngine(token="test-token", http_url="http://example.com")

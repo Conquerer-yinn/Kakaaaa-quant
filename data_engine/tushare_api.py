@@ -1,5 +1,7 @@
 ﻿import time
 
+from urllib.parse import urlparse
+
 import requests
 import tushare as ts
 
@@ -14,6 +16,12 @@ class TushareDataEngine:
         if not resolved_token:
             raise ValueError("TUSHARE_TOKEN is not configured.")
 
+        resolved_http_url = TUSHARE_HTTP_URL if http_url is None else http_url
+        if resolved_http_url:
+            parsed_url = urlparse(resolved_http_url)
+            if parsed_url.scheme.lower() != "https" or not parsed_url.netloc:
+                raise ValueError("Custom Tushare gateway must use a valid HTTPS URL.")
+
         self.request_delay = (
             TUSHARE_REQUEST_DELAY if request_delay is None else request_delay
         )
@@ -21,9 +29,9 @@ class TushareDataEngine:
         self.pro = ts.pro_api(resolved_token)
 
         # 兼容需要自定义 Tushare 网关的环境。
-        if http_url or TUSHARE_HTTP_URL:
+        if resolved_http_url:
             self.pro._DataApi__token = resolved_token
-            self.pro._DataApi__http_url = http_url or TUSHARE_HTTP_URL
+            self.pro._DataApi__http_url = resolved_http_url
 
     def get_trade_calendar(self, start_date, end_date, exchange="SSE"):
         # 交易日历是所有增量任务的时间基准。
