@@ -22,6 +22,8 @@ from strategies.chinext_limit_up_workbook import (
 
 DEFAULT_LOOKBACK_DAYS = 120
 FUTURE_CALENDAR_BUFFER_DAYS = 14
+MAX_FUTURE_CALENDAR_BUFFER_DAYS = 56
+REQUIRED_FUTURE_TRADING_DAYS = 5
 
 
 def normalize_ymd(value: object) -> str | None:
@@ -32,6 +34,10 @@ def normalize_ymd(value: object) -> str | None:
 
     text = str(value).strip()
     if text.isdigit() and len(text) == 8:
+        try:
+            datetime.strptime(text, "%Y%m%d")
+        except ValueError as exc:
+            raise ValueError(f"无法识别日期: {value}") from exc
         return text
     try:
         return pd.to_datetime(text, errors="raise").strftime("%Y%m%d")
