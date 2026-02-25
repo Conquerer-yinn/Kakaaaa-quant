@@ -6,6 +6,7 @@ import pandas as pd
 
 from strategies.run_chinext_limit_up_event_study import (
     build_fetch_end,
+    load_trade_calendar_with_horizon,
     normalize_ymd,
     resolve_study_range,
     run_chinext_limit_up_event_study,
@@ -55,6 +56,23 @@ class FakeEngine:
         )
 
 
+class LongHolidayEngine:
+    def __init__(self):
+        self.calendar_requests: list[tuple[str, str]] = []
+
+    def get_trade_calendar(self, start_date, end_date):
+        self.calendar_requests.append((start_date, end_date))
+        if len(self.calendar_requests) == 1:
+            return ["20260120", "20260121", "20260122", "20260123"]
+        return [
+            "20260120",
+            "20260121",
+            "20260122",
+            "20260123",
+            "20260204",
+            "20260205",
+        ]
+
 class RunChinextLimitUpEventStudyTest(unittest.TestCase):
     def test_normalizes_dates_and_rejects_reversed_range(self):
         self.assertEqual(normalize_ymd("2026-01-05"), "20260105")
@@ -64,11 +82,34 @@ class RunChinextLimitUpEventStudyTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "开始日期不能晚于结束日期"):
             resolve_study_range("20260112", "20260105")
 
+        for invalid_date in ("20260231", "20261301"):
+            with self.subTest(invalid_date=invalid_date):
+                with self.assertRaisesRegex(ValueError, "无法识别日期"):
+                    normalize_ymd(invalid_date)
+
+        with self.assertRaisesRegex(ValueError, "无法识别日期"):
+            resolve_study_range("20260101", "20260231")
+
     def test_defaults_to_previous_120_calendar_days(self):
         self.assertEqual(resolve_study_range(None, "20260501"), ("20260101", "20260501"))
 
     def test_builds_fourteen_day_future_calendar_buffer(self):
         self.assertEqual(build_fetch_end("20260105"), "20260119")
+
+    def test_expands_calendar_window_until_five_future_sessions_exist(self):
+        engine = LongHolidayEngine()
+
+        trade_dates = load_trade_calendar_with_horizon(
+            engine=engine,
+            start_date="20260120",
+            end_date="20260120",
+        )
+
+        self.assertEqual(len([value for value in trade_dates if value > "20260120"]), 5)
+        self.assertEqual(
+            engine.calendar_requests,
+            [("20260120", "20260203"), ("20260120", "20260217")],
+        )
 
     def test_runner_uses_injected_engine_and_writes_workbook(self):
         engine = FakeEngine()

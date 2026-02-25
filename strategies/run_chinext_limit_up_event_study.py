@@ -61,11 +61,34 @@ def resolve_study_range(
     return resolved_start, resolved_end
 
 
-def build_fetch_end(end_date: str) -> str:
+def build_fetch_end(
+    end_date: str,
+    buffer_days: int = FUTURE_CALENDAR_BUFFER_DAYS,
+) -> str:
     return (
         datetime.strptime(end_date, "%Y%m%d")
-        + timedelta(days=FUTURE_CALENDAR_BUFFER_DAYS)
+        + timedelta(days=buffer_days)
     ).strftime("%Y%m%d")
+
+
+def load_trade_calendar_with_horizon(
+    engine: TushareDataEngine,
+    start_date: str,
+    end_date: str,
+) -> list[str]:
+    buffer_days = FUTURE_CALENDAR_BUFFER_DAYS
+    while buffer_days <= MAX_FUTURE_CALENDAR_BUFFER_DAYS:
+        fetch_end = build_fetch_end(end_date, buffer_days=buffer_days)
+        trade_dates = sorted(set(engine.get_trade_calendar(start_date, fetch_end)))
+        future_dates = [value for value in trade_dates if value > end_date]
+        if len(future_dates) >= REQUIRED_FUTURE_TRADING_DAYS:
+            return trade_dates
+        buffer_days *= 2
+
+    raise ValueError(
+        f"无法在 {MAX_FUTURE_CALENDAR_BUFFER_DAYS} 个自然日内取得"
+        f"事件结束日后的 {REQUIRED_FUTURE_TRADING_DAYS} 个交易日。"
+    )
 
 
 def run_chinext_limit_up_event_study(
@@ -75,11 +98,14 @@ def run_chinext_limit_up_event_study(
     engine: TushareDataEngine | None = None,
 ) -> str:
     resolved_start, resolved_end = resolve_study_range(start_date, end_date)
-    fetch_end = build_fetch_end(resolved_end)
     data_engine = engine or TushareDataEngine()
-    trade_dates = data_engine.get_trade_calendar(resolved_start, fetch_end)
+    trade_dates = load_trade_calendar_with_horizon(
+        engine=data_engine,
+        start_date=resolved_start,
+        end_date=resolved_end,
+    )
     if not trade_dates:
-        raise ValueError(f"{resolved_start} 至 {fetch_end} 没有可用交易日。")
+        raise ValueError(f"{resolved_start} 至 {resolved_end} 没有可用交易日。")
 
     daily_by_date = {}
     limit_by_date = {}

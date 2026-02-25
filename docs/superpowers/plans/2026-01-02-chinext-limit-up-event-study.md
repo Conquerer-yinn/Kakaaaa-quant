@@ -43,6 +43,8 @@ Expected: FAIL because sensitive calls contain non-empty defaults and `.env.exam
 
 Apply commit `8e93a80` or make the equivalent minimal edit so both credentials only use environment variables and `.env.example` contains empty documented keys.
 
+Also redact live credentials from tracked archives, default `TUSHARE_HTTP_URL` to empty, and reject any explicitly configured non-HTTPS gateway.
+
 - [ ] **Step 4: Run the test and verify GREEN**
 
 Run: `.venv/Scripts/python -m unittest tests.test_config_security -v`
@@ -163,7 +165,7 @@ assert Path(output_path).exists()
 assert fake_engine.calendar_requests == [("20260101", "20260414")]
 ```
 
-The runner fetches the trading calendar through `end_date + 14 calendar days`, loads daily quotes for all returned dates, loads limit events only for the requested event interval, calculates the study, and writes the workbook.
+The runner starts with `end_date + 14 calendar days` and doubles the window up to 56 days until the calendar contains at least five open sessions after the event end date. It then loads daily quotes for all returned dates, loads limit events only for the requested event interval, calculates the study, and writes the workbook.
 
 - [ ] **Step 6: Verify GREEN**
 
