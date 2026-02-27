@@ -110,3 +110,76 @@ Convert the index DataFrame into a date-to-close map, derive event-day market re
 
 Run the two unittest modules and expect all tests to pass.
 
+### Task 4: API projection
+
+**Files:**
+- Modify: `backend/schemas/strategies.py`
+- Modify: `backend/services/strategy_data.py`
+- Modify: `tests/backend/test_strategy_data.py`
+
+- [ ] **Step 1: Write failing API-service assertions**
+
+Assert `StrategyStudyResponse` returns non-empty `group_summary` and `quality_summary` from a V2 workbook and exposes quality counters in metadata.
+
+- [ ] **Step 2: Verify RED**
+
+Run: `.venv/Scripts/python -m unittest tests.backend.test_strategy_data -v`
+
+Expected: FAIL because the response model and service do not read the new sheets.
+
+- [ ] **Step 3: Implement schema and service projection**
+
+Read both sheets from the exact workbook chosen by GET/POST and normalize values with the existing JSON-safe conversion.
+
+- [ ] **Step 4: Verify GREEN**
+
+Run the backend strategy-data tests and expect all tests to pass.
+
+### Task 5: V2 strategy page
+
+**Files:**
+- Modify: `frontend/src/pages/strategyViewModel.js`
+- Modify: `frontend/src/pages/StrategiesPage.jsx`
+- Modify: `frontend/tests/strategyViewModel.test.js`
+
+- [ ] **Step 1: Write failing view-model assertions**
+
+Assert metrics include ST exclusion, recent-listing exclusion, and missing benchmark counts.
+
+- [ ] **Step 2: Verify RED**
+
+Run: `cd frontend && node --test tests/strategyViewModel.test.js`
+
+Expected: FAIL because V1 metrics omit quality counters.
+
+- [ ] **Step 3: Implement V2 sections**
+
+Render the existing summary plus separate “分组统计” and “样本质量” tables. Update the research boundary copy to name `399006.SZ` and excess returns.
+
+- [ ] **Step 4: Verify GREEN and build**
+
+Run `npm test` and `npm run build`; expect all tests and the Vite production build to pass.
+
+### Task 6: Documentation and delivery
+
+**Files:**
+- Modify: `README.md`
+- Modify: `strategies/README.md`
+- Modify: `project_memory/handoff/PROJECT_STATUS.md`
+- Create: `project_memory/decisions/2026-03-25_创业板涨停事件研究V2.md`
+
+- [ ] **Step 1: Document all V2 thresholds and caveats**
+
+Record benchmark code, listing-age filter, market-regime thresholds, missing-data behavior, and the unchanged non-trading-strategy boundary.
+
+- [ ] **Step 2: Run full verification**
+
+Run Python unittest discovery, frontend tests/build, AST parsing, pip check, `git diff --check`, HTTP smoke, and browser console inspection.
+
+- [ ] **Step 3: Request focused code review**
+
+Review the full V2 diff for research bias, missing-data handling, API consistency, and test adequacy. Resolve every Critical/Important issue.
+
+- [ ] **Step 4: Commit and push**
+
+Use Lore trailers, push `codex/feature-development`, and verify the remote ref equals local HEAD.
