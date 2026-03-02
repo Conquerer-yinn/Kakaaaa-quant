@@ -53,6 +53,7 @@ class EventStudyResult:
     complete_sample_count: int
     skipped_incomplete_count: int
     skipped_missing_quote_count: int
+    missing_benchmark_count: int = 0
 
 
 def build_event_study(
@@ -61,6 +62,7 @@ def build_event_study(
     event_end_date: str,
     daily_by_date: dict[str, pd.DataFrame],
     limit_by_date: dict[str, pd.DataFrame],
+    benchmark_close_by_date: dict[str, float] | None = None,
 ) -> EventStudyResult:
     """计算创业板涨停事件后 1、3、5 个交易日的收盘表现。"""
     ordered_dates = sorted({str(value) for value in trade_dates})
