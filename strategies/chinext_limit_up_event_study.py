@@ -71,6 +71,8 @@ def build_event_study(
     candidate_event_count = 0
     skipped_incomplete_count = 0
     skipped_missing_quote_count = 0
+    missing_benchmark_count = 0
+    benchmark_closes = benchmark_close_by_date or {}
 
     for event_date in ordered_dates:
         if not event_start_date <= event_date <= event_end_date:
@@ -105,6 +107,26 @@ def build_event_study(
                 continue
 
             window_returns = [_return_percent(value, event_close) for value in closes]
+            benchmark_event_close = benchmark_closes.get(event_date)
+            benchmark_future_closes = [
+                benchmark_closes.get(trade_date) for trade_date in window_dates
+            ]
+            has_complete_benchmark = _valid_close(benchmark_event_close) and all(
+                _valid_close(value) for value in benchmark_future_closes
+            )
+            if has_complete_benchmark:
+                benchmark_returns = [
+                    _return_percent(value, benchmark_event_close)
+                    for value in benchmark_future_closes
+                ]
+                excess_returns = [
+                    round(stock_return - benchmark_return, 2)
+                    for stock_return, benchmark_return in zip(window_returns, benchmark_returns)
+                ]
+            else:
+                missing_benchmark_count += 1
+                benchmark_returns = [None] * len(window_dates)
+                excess_returns = [None] * len(window_dates)
             detail_rows.append(
                 {
                     "事件日期": event_date,
@@ -112,15 +134,26 @@ def build_event_study(
                     "股票名称": _optional_text(event.get("name")),
                     "连板次数": _optional_int(event.get("limit_times")),
                     "事件日收盘价": _round_number(event_close),
+                    "事件日基准收盘价": (
+                        _round_number(benchmark_event_close)
+                        if _valid_close(benchmark_event_close)
+                        else None
+                    ),
                     "1日后日期": future_dates[1],
                     "1日后收盘价": _round_number(closes[0]),
                     "1日收益率(%)": window_returns[0],
+                    "1日基准收益率(%)": benchmark_returns[0],
+                    "1日超额收益率(%)": excess_returns[0],
                     "3日后日期": future_dates[3],
                     "3日后收盘价": _round_number(closes[2]),
                     "3日收益率(%)": window_returns[2],
+                    "3日基准收益率(%)": benchmark_returns[2],
+                    "3日超额收益率(%)": excess_returns[2],
                     "5日后日期": future_dates[5],
                     "5日后收盘价": _round_number(closes[4]),
                     "5日收益率(%)": window_returns[4],
+                    "5日基准收益率(%)": benchmark_returns[4],
+                    "5日超额收益率(%)": excess_returns[4],
                     "5日内最高收盘收益率(%)": max(window_returns),
                     "5日内最低收盘收益率(%)": min(window_returns),
                 }
