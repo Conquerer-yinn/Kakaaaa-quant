@@ -168,6 +168,7 @@ def build_event_study(
         complete_sample_count=len(details),
         skipped_incomplete_count=skipped_incomplete_count,
         skipped_missing_quote_count=skipped_missing_quote_count,
+        missing_benchmark_count=missing_benchmark_count,
     )
 
 
