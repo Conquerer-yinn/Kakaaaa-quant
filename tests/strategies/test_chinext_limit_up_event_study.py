@@ -30,6 +30,75 @@ def limit_frame(*rows: dict) -> pd.DataFrame:
 
 
 class ChinextLimitUpEventStudyTest(unittest.TestCase):
+    def test_calculates_benchmark_and_excess_returns(self):
+        daily_by_date = {
+            "20260105": daily_frame(**{"300001.SZ": 10.0}),
+            "20260106": daily_frame(**{"300001.SZ": 11.0}),
+            "20260107": daily_frame(**{"300001.SZ": 9.0}),
+            "20260108": daily_frame(**{"300001.SZ": 12.0}),
+            "20260109": daily_frame(**{"300001.SZ": 8.0}),
+            "20260112": daily_frame(**{"300001.SZ": 11.0}),
+        }
+        benchmark_close_by_date = {
+            "20260105": 100.0,
+            "20260106": 101.0,
+            "20260107": 102.0,
+            "20260108": 103.0,
+            "20260109": 104.0,
+            "20260112": 105.0,
+        }
+
+        result = build_event_study(
+            trade_dates=TRADE_DATES,
+            event_start_date="20260105",
+            event_end_date="20260105",
+            daily_by_date=daily_by_date,
+            limit_by_date={
+                "20260105": limit_frame(
+                    {"ts_code": "300001.SZ", "name": "样本一", "limit": "U", "limit_times": 1}
+                )
+            },
+            benchmark_close_by_date=benchmark_close_by_date,
+        )
+
+        row = result.details.iloc[0]
+        self.assertEqual(row["1日基准收益率(%)"], 1.0)
+        self.assertEqual(row["1日超额收益率(%)"], 9.0)
+        self.assertEqual(row["3日基准收益率(%)"], 3.0)
+        self.assertEqual(row["3日超额收益率(%)"], 17.0)
+        self.assertEqual(row["5日基准收益率(%)"], 5.0)
+        self.assertEqual(row["5日超额收益率(%)"], 5.0)
+        five_day = result.summary.loc[result.summary["观察周期"] == "5日"].iloc[0]
+        self.assertEqual(five_day["基准平均收益率(%)"], 5.0)
+        self.assertEqual(five_day["平均超额收益率(%)"], 5.0)
+        self.assertEqual(five_day["超额正收益比例(%)"], 100.0)
+        self.assertEqual(result.missing_benchmark_count, 0)
+
+    def test_keeps_raw_returns_when_benchmark_is_missing(self):
+        daily_by_date = {
+            trade_date: daily_frame(**{"300001.SZ": 10.0 + index})
+            for index, trade_date in enumerate(TRADE_DATES)
+        }
+
+        result = build_event_study(
+            trade_dates=TRADE_DATES,
+            event_start_date="20260105",
+            event_end_date="20260105",
+            daily_by_date=daily_by_date,
+            limit_by_date={
+                "20260105": limit_frame(
+                    {"ts_code": "300001.SZ", "name": "样本一", "limit": "U", "limit_times": 1}
+                )
+            },
+            benchmark_close_by_date={},
+        )
+
+        row = result.details.iloc[0]
+        self.assertEqual(row["5日收益率(%)"], 50.0)
+        self.assertTrue(pd.isna(row["5日基准收益率(%)"]))
+        self.assertTrue(pd.isna(row["5日超额收益率(%)"]))
+        self.assertEqual(result.missing_benchmark_count, 1)
+
     def test_builds_complete_event_returns_and_filters_non_events(self):
         daily_by_date = {
             "20260105": daily_frame(**{"300001.SZ": 10.0}),
