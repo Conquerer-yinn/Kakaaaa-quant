@@ -207,6 +207,12 @@ def _build_summary(details: pd.DataFrame) -> pd.DataFrame:
     for horizon in HORIZONS:
         column = f"{horizon}日收益率(%)"
         values = pd.to_numeric(details[column], errors="coerce").dropna()
+        benchmark_values = pd.to_numeric(
+            details[f"{horizon}日基准收益率(%)"], errors="coerce"
+        ).dropna()
+        excess_values = pd.to_numeric(
+            details[f"{horizon}日超额收益率(%)"], errors="coerce"
+        ).dropna()
         if values.empty:
             rows.append(
                 {
@@ -217,6 +223,9 @@ def _build_summary(details: pd.DataFrame) -> pd.DataFrame:
                     "正收益比例(%)": None,
                     "最大收益率(%)": None,
                     "最小收益率(%)": None,
+                    "基准平均收益率(%)": None,
+                    "平均超额收益率(%)": None,
+                    "超额正收益比例(%)": None,
                 }
             )
             continue
@@ -230,6 +239,9 @@ def _build_summary(details: pd.DataFrame) -> pd.DataFrame:
                 "正收益比例(%)": round(float((values > 0).mean() * 100), 2),
                 "最大收益率(%)": round(float(values.max()), 2),
                 "最小收益率(%)": round(float(values.min()), 2),
+                "基准平均收益率(%)": _mean_or_none(benchmark_values),
+                "平均超额收益率(%)": _mean_or_none(excess_values),
+                "超额正收益比例(%)": _positive_rate_or_none(excess_values),
             }
         )
     return pd.DataFrame(rows, columns=SUMMARY_COLUMNS)
@@ -237,6 +249,18 @@ def _build_summary(details: pd.DataFrame) -> pd.DataFrame:
 
 def _return_percent(close: float, event_close: float) -> float:
     return round((float(close) / float(event_close) - 1) * 100, 2)
+
+
+def _mean_or_none(values: pd.Series) -> float | None:
+    if values.empty:
+        return None
+    return round(float(values.mean()), 2)
+
+
+def _positive_rate_or_none(values: pd.Series) -> float | None:
+    if values.empty:
+        return None
+    return round(float((values > 0).mean() * 100), 2)
 
 
 def _valid_close(value: object) -> bool:
