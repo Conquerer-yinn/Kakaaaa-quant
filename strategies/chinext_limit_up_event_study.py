@@ -1,16 +1,19 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import pandas as pd
 
 
 HORIZONS = (1, 3, 5)
+RECENT_LISTING_DAYS = 60
 DETAIL_COLUMNS = [
     "事件日期",
     "股票代码",
     "股票名称",
     "连板次数",
+    "连板阶段",
+    "市场环境",
     "事件日收盘价",
     "事件日基准收盘价",
     "1日后日期",
@@ -43,6 +46,17 @@ SUMMARY_COLUMNS = [
     "平均超额收益率(%)",
     "超额正收益比例(%)",
 ]
+GROUP_SUMMARY_COLUMNS = [
+    "分组维度",
+    "分组",
+    "观察周期",
+    "样本数",
+    "平均收益率(%)",
+    "平均超额收益率(%)",
+    "正收益比例(%)",
+    "超额正收益比例(%)",
+]
+QUALITY_SUMMARY_COLUMNS = ["质量项目", "数量", "说明"]
 
 
 @dataclass(frozen=True)
