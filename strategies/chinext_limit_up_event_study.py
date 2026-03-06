@@ -97,7 +97,12 @@ def build_event_study(
     skipped_incomplete_count = 0
     skipped_missing_quote_count = 0
     missing_benchmark_count = 0
+    excluded_st_count = 0
+    excluded_recent_listing_count = 0
+    missing_stock_basic_count = 0
     benchmark_closes = benchmark_close_by_date or {}
+    stock_info = _stock_info_by_code(stock_basic_df)
+    market_regimes = market_regime_by_date or {}
 
     for event_date in ordered_dates:
         if not event_start_date <= event_date <= event_end_date:
@@ -108,9 +113,31 @@ def build_event_study(
         if events.empty:
             continue
 
+        eligible_rows = []
+        for _, event in events.iterrows():
+            ts_code = str(event["ts_code"])
+            info = stock_info.get(ts_code)
+            event_name = _optional_text(event.get("name"))
+            stock_name = _optional_text(info.get("name")) if info is not None else None
+            if _is_st_name(event_name) or _is_st_name(stock_name):
+                excluded_st_count += 1
+                continue
+
+            list_date = _normalized_date(info.get("list_date")) if info is not None else None
+            if info is None or list_date is None:
+                missing_stock_basic_count += 1
+            elif _listing_age_days(event_date, list_date) < RECENT_LISTING_DAYS:
+                excluded_recent_listing_count += 1
+                continue
+            eligible_rows.append(event)
+
+        if not eligible_rows:
+            continue
+        eligible_events = pd.DataFrame(eligible_rows, columns=events.columns)
+
         event_index = date_index[event_date]
         if event_index + max(HORIZONS) >= len(ordered_dates):
-            skipped_incomplete_count += len(events)
+            skipped_incomplete_count += len(eligible_events)
             continue
 
         future_dates = {
