@@ -185,6 +185,8 @@ def build_event_study(
                     "股票代码": ts_code,
                     "股票名称": _optional_text(event.get("name")),
                     "连板次数": _optional_int(event.get("limit_times")),
+                    "连板阶段": _board_stage(event.get("limit_times")),
+                    "市场环境": market_regimes.get(event_date, "未知"),
                     "事件日收盘价": _round_number(event_close),
                     "事件日基准收盘价": (
                         _round_number(benchmark_event_close)
