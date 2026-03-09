@@ -150,7 +150,7 @@ def build_event_study(
             for trade_date in window_dates
         }
 
-        for _, event in events.iterrows():
+        for _, event in eligible_events.iterrows():
             ts_code = str(event["ts_code"])
             event_close = event_quotes.get(ts_code)
             closes = [future_quotes[trade_date].get(ts_code) for trade_date in window_dates]
