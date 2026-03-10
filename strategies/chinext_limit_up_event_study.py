@@ -215,6 +215,17 @@ def build_event_study(
 
     details = pd.DataFrame(detail_rows, columns=DETAIL_COLUMNS)
     summary = _build_summary(details)
+    group_summary = _build_group_summary(details)
+    quality_summary = _build_quality_summary(
+        candidate_event_count=candidate_event_count,
+        excluded_st_count=excluded_st_count,
+        excluded_recent_listing_count=excluded_recent_listing_count,
+        missing_stock_basic_count=missing_stock_basic_count,
+        skipped_incomplete_count=skipped_incomplete_count,
+        skipped_missing_quote_count=skipped_missing_quote_count,
+        missing_benchmark_count=missing_benchmark_count,
+        complete_sample_count=len(details),
+    )
     return EventStudyResult(
         details=details,
         summary=summary,
