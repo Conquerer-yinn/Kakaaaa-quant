@@ -234,7 +234,20 @@ def build_event_study(
         skipped_incomplete_count=skipped_incomplete_count,
         skipped_missing_quote_count=skipped_missing_quote_count,
         missing_benchmark_count=missing_benchmark_count,
+        excluded_st_count=excluded_st_count,
+        excluded_recent_listing_count=excluded_recent_listing_count,
+        missing_stock_basic_count=missing_stock_basic_count,
+        group_summary=group_summary,
+        quality_summary=quality_summary,
     )
+
+
+def classify_market_regime(limit_up_count: int) -> str:
+    if limit_up_count <= 30:
+        return "弱"
+    if limit_up_count <= 60:
+        return "中"
+    return "强"
 
 
 def _extract_chinext_limit_up_events(limit_df: pd.DataFrame | None) -> pd.DataFrame:
