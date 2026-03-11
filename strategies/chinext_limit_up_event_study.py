@@ -325,6 +325,71 @@ def _build_summary(details: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows, columns=SUMMARY_COLUMNS)
 
 
+def _build_group_summary(details: pd.DataFrame) -> pd.DataFrame:
+    if details.empty:
+        return pd.DataFrame(columns=GROUP_SUMMARY_COLUMNS)
+
+    rows = []
+    for dimension in ("连板阶段", "市场环境"):
+        groups = details[dimension].fillna("未知").astype(str)
+        for group_name in sorted(groups.unique()):
+            group_frame = details.loc[groups == group_name]
+            for horizon in HORIZONS:
+                values = pd.to_numeric(
+                    group_frame[f"{horizon}日收益率(%)"], errors="coerce"
+                ).dropna()
+                excess_values = pd.to_numeric(
+                    group_frame[f"{horizon}日超额收益率(%)"], errors="coerce"
+                ).dropna()
+                rows.append(
+                    {
+                        "分组维度": dimension,
+                        "分组": group_name,
+                        "观察周期": f"{horizon}日",
+                        "样本数": int(len(values)),
+                        "平均收益率(%)": _mean_or_none(values),
+                        "平均超额收益率(%)": _mean_or_none(excess_values),
+                        "正收益比例(%)": _positive_rate_or_none(values),
+                        "超额正收益比例(%)": _positive_rate_or_none(excess_values),
+                    }
+                )
+    return pd.DataFrame(rows, columns=GROUP_SUMMARY_COLUMNS)
+
+
+def _build_quality_summary(**counts: int) -> pd.DataFrame:
+    rows = [
+        {"质量项目": "候选事件", "数量": counts["candidate_event_count"], "说明": "创业板且涨停状态为U"},
+        {"质量项目": "排除ST", "数量": counts["excluded_st_count"], "说明": "事件名或股票基础名称包含ST"},
+        {
+            "质量项目": "排除上市未满60天",
+            "数量": counts["excluded_recent_listing_count"],
+            "说明": "事件日距离上市日少于60个自然日",
+        },
+        {
+            "质量项目": "股票基础信息缺失",
+            "数量": counts["missing_stock_basic_count"],
+            "说明": "样本保留，但无法执行完整上市日期检查",
+        },
+        {
+            "质量项目": "未来窗口不足",
+            "数量": counts["skipped_incomplete_count"],
+            "说明": "事件后不足5个交易日",
+        },
+        {
+            "质量项目": "个股行情缺失",
+            "数量": counts["skipped_missing_quote_count"],
+            "说明": "事件日或未来5日收盘价缺失",
+        },
+        {
+            "质量项目": "基准行情缺失",
+            "数量": counts["missing_benchmark_count"],
+            "说明": "保留原始收益，超额收益留空",
+        },
+        {"质量项目": "完整样本", "数量": counts["complete_sample_count"], "说明": "进入研究摘要与分组统计"},
+    ]
+    return pd.DataFrame(rows, columns=QUALITY_SUMMARY_COLUMNS)
+
+
 def _return_percent(close: float, event_close: float) -> float:
     return round((float(close) / float(event_close) - 1) * 100, 2)
 
