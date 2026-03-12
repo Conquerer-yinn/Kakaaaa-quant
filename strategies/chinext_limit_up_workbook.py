@@ -49,6 +49,11 @@ def write_event_study_workbook(
             {"字段": "完整样本数", "值": result.complete_sample_count},
             {"字段": "未来窗口不足跳过数", "值": result.skipped_incomplete_count},
             {"字段": "行情缺失跳过数", "值": result.skipped_missing_quote_count},
+            {"字段": "基准行情缺失数", "值": result.missing_benchmark_count},
+            {"字段": "排除ST数", "值": result.excluded_st_count},
+            {"字段": "排除上市未满60天数", "值": result.excluded_recent_listing_count},
+            {"字段": "股票基础信息缺失数", "值": result.missing_stock_basic_count},
+            {"字段": "基准代码", "值": "399006.SZ"},
             {"字段": "生成时间", "值": datetime.now().strftime("%Y-%m-%d %H:%M:%S")},
         ]
     )
@@ -56,11 +61,15 @@ def write_event_study_workbook(
         file_name=file_name,
         sheets={
             "研究摘要": result.summary,
+            "分组统计": result.group_summary,
+            "样本质量": result.quality_summary,
             "事件明细": result.details,
             "运行信息": run_info,
         },
         table_names={
             "研究摘要": "ChinextEventSummary",
+            "分组统计": "ChinextEventGroups",
+            "样本质量": "ChinextEventQuality",
             "事件明细": "ChinextEventDetails",
             "运行信息": "ChinextEventRunInfo",
         },
