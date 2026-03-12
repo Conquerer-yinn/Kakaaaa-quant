@@ -2,6 +2,7 @@ import unittest
 
 import pandas as pd
 
+from strategies import chinext_limit_up_event_study as event_study_module
 from strategies.chinext_limit_up_event_study import (
     DETAIL_COLUMNS,
     SUMMARY_COLUMNS,
@@ -30,6 +31,97 @@ def limit_frame(*rows: dict) -> pd.DataFrame:
 
 
 class ChinextLimitUpEventStudyTest(unittest.TestCase):
+    def test_filters_st_and_recent_listings_and_reports_quality(self):
+        codes = ["300001.SZ", "300002.SZ", "301003.SZ", "301004.SZ"]
+        daily_by_date = {
+            trade_date: daily_frame(
+                **{ts_code: 10.0 + index for ts_code in codes}
+            )
+            for index, trade_date in enumerate(TRADE_DATES)
+        }
+        stock_basic_df = pd.DataFrame(
+            [
+                {"ts_code": "300001.SZ", "name": "正常样本", "list_date": "20200101"},
+                {"ts_code": "300002.SZ", "name": "*ST风险", "list_date": "20200101"},
+                {"ts_code": "301003.SZ", "name": "次新样本", "list_date": "20251220"},
+            ]
+        )
+
+        result = build_event_study(
+            trade_dates=TRADE_DATES,
+            event_start_date="20260105",
+            event_end_date="20260105",
+            daily_by_date=daily_by_date,
+            limit_by_date={
+                "20260105": limit_frame(
+                    {"ts_code": "300001.SZ", "name": "正常样本", "limit": "U", "limit_times": 1},
+                    {"ts_code": "300002.SZ", "name": "*ST风险", "limit": "U", "limit_times": 1},
+                    {"ts_code": "301003.SZ", "name": "次新样本", "limit": "U", "limit_times": 1},
+                    {"ts_code": "301004.SZ", "name": "信息缺失", "limit": "U", "limit_times": 1},
+                )
+            },
+            stock_basic_df=stock_basic_df,
+        )
+
+        self.assertEqual(result.candidate_event_count, 4)
+        self.assertEqual(result.complete_sample_count, 2)
+        self.assertEqual(result.excluded_st_count, 1)
+        self.assertEqual(result.excluded_recent_listing_count, 1)
+        self.assertEqual(result.missing_stock_basic_count, 1)
+        self.assertEqual(
+            set(result.details["股票代码"]),
+            {"300001.SZ", "301004.SZ"},
+        )
+        quality = dict(zip(result.quality_summary["质量项目"], result.quality_summary["数量"]))
+        self.assertEqual(quality["排除ST"], 1)
+        self.assertEqual(quality["排除上市未满60天"], 1)
+        self.assertEqual(quality["股票基础信息缺失"], 1)
+        self.assertEqual(quality["完整样本"], 2)
+
+    def test_assigns_board_stage_and_builds_group_summary(self):
+        daily_by_date = {
+            trade_date: daily_frame(**{"300001.SZ": 10.0 + index, "301002.SZ": 20.0 + index})
+            for index, trade_date in enumerate(TRADE_DATES)
+        }
+
+        result = build_event_study(
+            trade_dates=TRADE_DATES,
+            event_start_date="20260105",
+            event_end_date="20260105",
+            daily_by_date=daily_by_date,
+            limit_by_date={
+                "20260105": limit_frame(
+                    {"ts_code": "300001.SZ", "name": "首板样本", "limit": "U", "limit_times": 1},
+                    {"ts_code": "301002.SZ", "name": "连板样本", "limit": "U", "limit_times": 2},
+                )
+            },
+            market_regime_by_date={"20260105": "强"},
+        )
+
+        stages = dict(zip(result.details["股票代码"], result.details["连板阶段"]))
+        self.assertEqual(stages, {"300001.SZ": "首板", "301002.SZ": "连板"})
+        self.assertEqual(set(result.details["市场环境"]), {"强"})
+        five_day_groups = result.group_summary.loc[result.group_summary["观察周期"] == "5日"]
+        stage_counts = dict(
+            zip(
+                five_day_groups.loc[five_day_groups["分组维度"] == "连板阶段", "分组"],
+                five_day_groups.loc[five_day_groups["分组维度"] == "连板阶段", "样本数"],
+            )
+        )
+        regime_row = five_day_groups.loc[
+            (five_day_groups["分组维度"] == "市场环境")
+            & (five_day_groups["分组"] == "强")
+        ].iloc[0]
+        self.assertEqual(stage_counts, {"首板": 1, "连板": 1})
+        self.assertEqual(regime_row["样本数"], 2)
+
+    def test_market_regime_thresholds_are_explicit(self):
+        self.assertEqual(event_study_module.classify_market_regime(0), "弱")
+        self.assertEqual(event_study_module.classify_market_regime(30), "弱")
+        self.assertEqual(event_study_module.classify_market_regime(31), "中")
+        self.assertEqual(event_study_module.classify_market_regime(60), "中")
+        self.assertEqual(event_study_module.classify_market_regime(61), "强")
+
     def test_calculates_benchmark_and_excess_returns(self):
         daily_by_date = {
             "20260105": daily_frame(**{"300001.SZ": 10.0}),

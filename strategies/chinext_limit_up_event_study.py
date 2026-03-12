@@ -425,3 +425,37 @@ def _optional_int(value: object) -> int | None:
     if value is None or pd.isna(value):
         return None
     return int(float(value))
+
+
+def _board_stage(value: object) -> str:
+    limit_times = _optional_int(value)
+    if limit_times is None:
+        return "未知"
+    return "首板" if limit_times <= 1 else "连板"
+
+
+def _stock_info_by_code(stock_basic_df: pd.DataFrame | None) -> dict[str, dict[str, object]]:
+    if stock_basic_df is None or stock_basic_df.empty or "ts_code" not in stock_basic_df.columns:
+        return {}
+    return {
+        str(row["ts_code"]): row.to_dict()
+        for _, row in stock_basic_df.drop_duplicates("ts_code", keep="last").iterrows()
+    }
+
+
+def _is_st_name(value: str | None) -> bool:
+    return value is not None and "ST" in value.upper()
+
+
+def _normalized_date(value: object) -> str | None:
+    if value is None or pd.isna(value):
+        return None
+    text = str(value).strip()
+    if text.endswith(".0") and text[:-2].isdigit():
+        text = text[:-2]
+    parsed = pd.to_datetime(text, errors="coerce")
+    return parsed.strftime("%Y%m%d") if pd.notna(parsed) else None
+
+
+def _listing_age_days(event_date: str, list_date: str) -> int:
+    return int((pd.Timestamp(event_date) - pd.Timestamp(list_date)).days)
