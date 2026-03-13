@@ -13,7 +13,7 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 from data_engine.tushare_api import TushareDataEngine
-from strategies.chinext_limit_up_event_study import build_event_study
+from strategies.chinext_limit_up_event_study import build_event_study, classify_market_regime
 from strategies.chinext_limit_up_workbook import (
     STRATEGY_RESULTS_DIR,
     write_event_study_workbook,
@@ -24,6 +24,7 @@ DEFAULT_LOOKBACK_DAYS = 120
 FUTURE_CALENDAR_BUFFER_DAYS = 14
 MAX_FUTURE_CALENDAR_BUFFER_DAYS = 56
 REQUIRED_FUTURE_TRADING_DAYS = 5
+BENCHMARK_CODE = "399006.SZ"
 
 
 def normalize_ymd(value: object) -> str | None:
