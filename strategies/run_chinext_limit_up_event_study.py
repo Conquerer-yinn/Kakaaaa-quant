@@ -108,13 +108,25 @@ def run_chinext_limit_up_event_study(
     if not trade_dates:
         raise ValueError(f"{resolved_start} 至 {resolved_end} 没有可用交易日。")
 
+    stock_basic_df = data_engine.get_stock_basic(
+        fields="ts_code,name,list_date,market"
+    )
+    benchmark_df = data_engine.get_index_daily(
+        BENCHMARK_CODE,
+        start_date=resolved_start,
+        end_date=trade_dates[-1],
+    )
+    benchmark_close_by_date = _benchmark_close_by_date(benchmark_df)
     daily_by_date = {}
     limit_by_date = {}
+    market_regime_by_date = {}
     for trade_date in trade_dates:
         print(f"加载事件研究行情 {trade_date} ...")
         daily_by_date[trade_date] = data_engine.get_daily_quotes(trade_date)
         if resolved_start <= trade_date <= resolved_end:
-            limit_by_date[trade_date] = data_engine.get_limit_list(trade_date)
+            limit_df = data_engine.get_limit_list(trade_date)
+            limit_by_date[trade_date] = limit_df
+            market_regime_by_date[trade_date] = _market_regime_from_limit_frame(limit_df)
 
     result = build_event_study(
         trade_dates=trade_dates,
