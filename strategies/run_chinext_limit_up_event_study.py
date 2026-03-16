@@ -134,6 +134,9 @@ def run_chinext_limit_up_event_study(
         event_end_date=resolved_end,
         daily_by_date=daily_by_date,
         limit_by_date=limit_by_date,
+        benchmark_close_by_date=benchmark_close_by_date,
+        stock_basic_df=stock_basic_df,
+        market_regime_by_date=market_regime_by_date,
     )
     output_path = write_event_study_workbook(
         result=result,
