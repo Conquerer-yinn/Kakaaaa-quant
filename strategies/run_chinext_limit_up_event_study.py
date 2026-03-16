@@ -151,6 +151,28 @@ def run_chinext_limit_up_event_study(
     return output_path
 
 
+def _benchmark_close_by_date(frame: pd.DataFrame | None) -> dict[str, float]:
+    if frame is None or frame.empty:
+        return {}
+    if "trade_date" not in frame.columns or "close" not in frame.columns:
+        return {}
+
+    result = {}
+    for _, row in frame.iterrows():
+        trade_date = normalize_ymd(row["trade_date"])
+        close = pd.to_numeric(row["close"], errors="coerce")
+        if trade_date and pd.notna(close) and float(close) > 0:
+            result[trade_date] = float(close)
+    return result
+
+
+def _market_regime_from_limit_frame(frame: pd.DataFrame | None) -> str:
+    if frame is None or frame.empty or "limit" not in frame.columns:
+        return classify_market_regime(0)
+    limit_up_count = int(frame["limit"].astype(str).str.upper().eq("U").sum())
+    return classify_market_regime(limit_up_count)
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="研究创业板涨停事件后 1、3、5 日表现。")
     parser.add_argument("--start-date", default=None, help="YYYYMMDD，默认回看 120 个自然日。")
