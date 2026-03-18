@@ -30,6 +30,11 @@ RUN_INFO_KEYS = {
     "完整样本数": "complete_sample_count",
     "未来窗口不足跳过数": "skipped_incomplete_count",
     "行情缺失跳过数": "skipped_missing_quote_count",
+    "基准行情缺失数": "missing_benchmark_count",
+    "排除ST数": "excluded_st_count",
+    "排除上市未满60天数": "excluded_recent_listing_count",
+    "股票基础信息缺失数": "missing_stock_basic_count",
+    "基准代码": "benchmark_code",
     "生成时间": "generated_at",
 }
 
@@ -70,6 +75,8 @@ def _build_study_from_workbook(
 ) -> StrategyStudyResponse:
     try:
         summary_df = pd.read_excel(file_path, sheet_name="研究摘要")
+        group_summary_df = pd.read_excel(file_path, sheet_name="分组统计")
+        quality_summary_df = pd.read_excel(file_path, sheet_name="样本质量")
         details_df = pd.read_excel(file_path, sheet_name="事件明细")
         run_info_df = pd.read_excel(file_path, sheet_name="运行信息")
     except (OSError, ValueError) as exc:
@@ -78,6 +85,8 @@ def _build_study_from_workbook(
     details_df = _normalize_date_columns(details_df)
     recent_details = details_df.tail(max(int(limit), 0)).iloc[::-1].reset_index(drop=True)
     summary = _dataframe_records(summary_df)
+    group_summary = _dataframe_records(group_summary_df)
+    quality_summary = _dataframe_records(quality_summary_df)
     details = _dataframe_records(recent_details)
     metadata = _build_metadata(run_info_df, summary, details_df)
     return StrategyStudyResponse(
@@ -88,6 +97,8 @@ def _build_study_from_workbook(
         file_name=os.path.basename(file_path),
         updated_at=datetime.fromtimestamp(os.path.getmtime(file_path)).strftime("%Y-%m-%d %H:%M:%S"),
         summary=summary,
+        group_summary=group_summary,
+        quality_summary=quality_summary,
         metadata=metadata,
         detail_columns=[str(column) for column in recent_details.columns],
         details=details,
@@ -131,6 +142,10 @@ def _build_metadata(
         "complete_sample_count",
         "skipped_incomplete_count",
         "skipped_missing_quote_count",
+        "missing_benchmark_count",
+        "excluded_st_count",
+        "excluded_recent_listing_count",
+        "missing_stock_basic_count",
     ):
         if key in metadata and metadata[key] is not None:
             metadata[key] = int(metadata[key])
@@ -192,6 +207,8 @@ def _error_response(message: str) -> StrategyStudyResponse:
         file_name=None,
         updated_at=None,
         summary=[],
+        group_summary=[],
+        quality_summary=[],
         metadata={},
         detail_columns=[],
         details=[],
