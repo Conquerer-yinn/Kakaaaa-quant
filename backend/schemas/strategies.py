@@ -18,6 +18,8 @@ class StrategyStudyResponse(BaseModel):
     file_name: str | None = None
     updated_at: str | None = None
     summary: list[dict[str, Any]] = Field(default_factory=list)
+    group_summary: list[dict[str, Any]] = Field(default_factory=list)
+    quality_summary: list[dict[str, Any]] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
     detail_columns: list[str] = Field(default_factory=list)
     details: list[dict[str, Any]] = Field(default_factory=list)
