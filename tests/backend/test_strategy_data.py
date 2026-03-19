@@ -47,6 +47,29 @@ def result_fixture() -> EventStudyResult:
         complete_sample_count=2,
         skipped_incomplete_count=1,
         skipped_missing_quote_count=0,
+        missing_benchmark_count=1,
+        excluded_st_count=1,
+        excluded_recent_listing_count=2,
+        missing_stock_basic_count=1,
+        group_summary=pd.DataFrame(
+            [
+                {
+                    "分组维度": "连板阶段",
+                    "分组": "首板",
+                    "观察周期": "5日",
+                    "样本数": 2,
+                    "平均收益率(%)": 7.0,
+                    "平均超额收益率(%)": 3.0,
+                }
+            ]
+        ),
+        quality_summary=pd.DataFrame(
+            [
+                {"质量项目": "候选事件", "数量": 3, "说明": "创业板且涨停"},
+                {"质量项目": "排除ST", "数量": 1, "说明": "名称包含ST"},
+                {"质量项目": "完整样本", "数量": 2, "说明": "进入统计"},
+            ]
+        ),
     )
 
 
@@ -81,6 +104,14 @@ class StrategyDataServiceTest(unittest.TestCase):
         self.assertEqual(response.metadata["latest_event_date"], "20260106")
         self.assertEqual(response.metadata["five_day_average_return"], 7.0)
         self.assertEqual(response.metadata["five_day_positive_rate"], 100.0)
+        self.assertEqual(response.metadata["missing_benchmark_count"], 1)
+        self.assertEqual(response.metadata["excluded_st_count"], 1)
+        self.assertEqual(response.metadata["excluded_recent_listing_count"], 2)
+        self.assertEqual(response.metadata["missing_stock_basic_count"], 1)
+        self.assertEqual(len(response.group_summary), 1)
+        self.assertEqual(response.group_summary[0]["分组"], "首板")
+        self.assertEqual(len(response.quality_summary), 3)
+        self.assertEqual(response.quality_summary[1]["质量项目"], "排除ST")
 
     def test_run_service_uses_injected_runner_then_returns_result(self):
         with tempfile.TemporaryDirectory() as temp_dir:
