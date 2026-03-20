@@ -17,6 +17,10 @@ test("buildStrategyMetrics maps backend metadata to review cards", () => {
     complete_sample_count: 9,
     skipped_incomplete_count: 2,
     skipped_missing_quote_count: 1,
+    excluded_st_count: 2,
+    excluded_recent_listing_count: 3,
+    missing_stock_basic_count: 4,
+    missing_benchmark_count: 5,
     latest_event_date: "20260818",
     five_day_average_return: 3.25,
     five_day_positive_rate: 66.67,
@@ -27,6 +31,10 @@ test("buildStrategyMetrics maps backend metadata to review cards", () => {
     { label: "完整样本", value: 9 },
     { label: "未来窗口不足", value: 2 },
     { label: "行情缺失", value: 1 },
+    { label: "排除ST", value: 2 },
+    { label: "排除次新", value: 3 },
+    { label: "基础信息缺失", value: 4 },
+    { label: "基准行情缺失", value: 5 },
     { label: "最新事件日", value: "20260818" },
     { label: "5日平均收益", value: "3.25%" },
     { label: "5日正收益比例", value: "66.67%" },
@@ -38,6 +46,6 @@ test("buildStrategyMetrics keeps empty state explicit", () => {
   const metrics = buildStrategyMetrics({});
 
   assert.equal(metrics[0].value, 0);
-  assert.equal(metrics[4].value, "-");
-  assert.equal(metrics[5].value, "-");
+  assert.equal(metrics[8].value, "-");
+  assert.equal(metrics[9].value, "-");
 });
