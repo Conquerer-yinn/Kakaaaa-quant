@@ -55,6 +55,8 @@ export function StrategiesPage() {
     [study?.metadata],
   );
   const summaryColumns = study?.summary?.length ? Object.keys(study.summary[0]) : [];
+  const groupColumns = study?.group_summary?.length ? Object.keys(study.group_summary[0]) : [];
+  const qualityColumns = study?.quality_summary?.length ? Object.keys(study.quality_summary[0]) : [];
 
   return (
     <div className="page-stack">
@@ -62,7 +64,7 @@ export function StrategiesPage() {
         <div>
           <p className="eyebrow">策略研究 · 第一条真实闭环</p>
           <h2>创业板涨停后 5 日事件研究</h2>
-          <p>识别创业板涨停样本，观察事件后第 1、3、5 个交易日的收盘表现，并沉淀为可复盘 Excel。</p>
+          <p>识别创业板涨停样本，观察事件后第 1、3、5 个交易日相对创业板指数的表现，并沉淀为可复盘 Excel。</p>
         </div>
         <button className="primary-button" type="button" onClick={runStudy} disabled={running || loading}>
           {running ? "研究运行中…" : "运行最近 120 天研究"}
