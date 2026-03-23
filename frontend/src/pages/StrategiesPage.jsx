@@ -73,7 +73,7 @@ export function StrategiesPage() {
 
       <div className="feedback info strategy-disclaimer">
         <strong>研究边界：</strong>
-        这里展示的是历史事件统计，不包含交易成本、滑点、仓位或盘中成交模拟，也不代表策略已经验证盈利。
+        这里展示的是历史事件与相对 399006.SZ 的超额收益统计，不包含交易成本、滑点、仓位或盘中成交模拟，也不代表策略已经验证盈利。
       </div>
 
       {loading ? <div className="feedback info">正在读取最新策略研究结果…</div> : null}
@@ -100,11 +100,23 @@ export function StrategiesPage() {
                 <strong>收益口径</strong>
                 <p>以事件日收盘价为基准，计算未来第 1、3、5 个交易日的收盘收益。</p>
               </article>
+              <article className="text-panel muted">
+                <strong>基准与分组</strong>
+                <p>使用 399006.SZ 计算超额收益，并按首板/连板和事件日市场环境分组。</p>
+              </article>
             </div>
           </SectionCard>
 
-          <SectionCard title="周期统计" subtitle="均值、中位数、正收益比例及收益区间。">
+          <SectionCard title="总体周期统计" subtitle="个股收益、基准收益、超额收益及正收益比例。">
             <DataTable columns={summaryColumns} rows={study.summary || []} />
+          </SectionCard>
+
+          <SectionCard title="分组统计" subtitle="分别比较首板/连板与弱/中/强市场环境。">
+            <DataTable columns={groupColumns} rows={study.group_summary || []} />
+          </SectionCard>
+
+          <SectionCard title="样本质量" subtitle="所有排除项和缺失项显式计数，不静默丢弃。">
+            <DataTable columns={qualityColumns} rows={study.quality_summary || []} />
           </SectionCard>
 
           <SectionCard title="最近事件样本" subtitle="默认展示工作簿中最近 100 条完整事件。">
