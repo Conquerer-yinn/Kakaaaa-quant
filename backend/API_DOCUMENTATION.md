@@ -248,6 +248,8 @@
 返回最新事件研究工作簿中的：
 
 - `summary`：1、3、5 日周期统计
+- `group_summary`：首板/连板与弱/中/强环境分组统计
+- `quality_summary`：ST、次新、行情缺失、基准缺失等样本质量计数
 - `metadata`：候选事件数、完整样本数、跳过数量、最新事件日等
 - `detail_columns`：事件明细列名
 - `details`：最近完整事件
