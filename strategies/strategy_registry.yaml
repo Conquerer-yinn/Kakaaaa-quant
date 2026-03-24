@@ -1,5 +1,13 @@
 # 用于管理哪些策略需要纳入日常运行。
 # 研究记录请直接放在 strategies/ 目录中。
+#
+# 字段说明：
+#   name     策略唯一名称
+#   script   策略脚本路径（相对项目根目录）
+#   enabled  是否纳入日常运行
+#   push     运行后是否推送飞书摘要
+#   notes    研究笔记路径
+#   kind / maturity / output  研究类型、成熟度与输出位置（研究类条目使用）
 
 strategies:
   - name: chinext_limit_up_event_study
@@ -7,7 +15,7 @@ strategies:
     enabled: false
     push: false
     kind: event_study
-    maturity: v1_research
+    maturity: v2_research
     output: storage/strategy_results/创业板涨停事件研究_起始日期_结束日期.xlsx
     notes: strategies/README.md
   - name: example_strategy
