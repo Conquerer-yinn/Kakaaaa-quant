@@ -163,22 +163,24 @@ def build_event_study(
             benchmark_future_closes = [
                 benchmark_closes.get(trade_date) for trade_date in window_dates
             ]
-            has_complete_benchmark = _valid_close(benchmark_event_close) and all(
-                _valid_close(value) for value in benchmark_future_closes
-            )
-            if has_complete_benchmark:
-                benchmark_returns = [
+            benchmark_returns = [
+                (
                     _return_percent(value, benchmark_event_close)
-                    for value in benchmark_future_closes
-                ]
-                excess_returns = [
+                    if _valid_close(benchmark_event_close) and _valid_close(value)
+                    else None
+                )
+                for value in benchmark_future_closes
+            ]
+            excess_returns = [
+                (
                     round(stock_return - benchmark_return, 2)
-                    for stock_return, benchmark_return in zip(window_returns, benchmark_returns)
-                ]
-            else:
+                    if benchmark_return is not None
+                    else None
+                )
+                for stock_return, benchmark_return in zip(window_returns, benchmark_returns)
+            ]
+            if any(benchmark_returns[index] is None for index in (0, 2, 4)):
                 missing_benchmark_count += 1
-                benchmark_returns = [None] * len(window_dates)
-                excess_returns = [None] * len(window_dates)
             detail_rows.append(
                 {
                     "事件日期": event_date,
