@@ -1,3 +1,6 @@
+export const STUDY_BADGE = { status: "v2", label: "V2 研究" };
+
+
 export function formatPercent(value) {
   if (value === null || value === undefined || value === "") {
     return "-";
