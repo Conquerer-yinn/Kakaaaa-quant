@@ -191,6 +191,40 @@ class ChinextLimitUpEventStudyTest(unittest.TestCase):
         self.assertTrue(pd.isna(row["5日超额收益率(%)"]))
         self.assertEqual(result.missing_benchmark_count, 1)
 
+    def test_calculates_available_horizons_when_later_benchmark_is_missing(self):
+        daily_by_date = {
+            trade_date: daily_frame(**{"300001.SZ": 10.0 + index})
+            for index, trade_date in enumerate(TRADE_DATES)
+        }
+        benchmark_close_by_date = {
+            "20260105": 100.0,
+            "20260106": 101.0,
+            "20260107": 102.0,
+            "20260108": 103.0,
+        }
+
+        result = build_event_study(
+            trade_dates=TRADE_DATES,
+            event_start_date="20260105",
+            event_end_date="20260105",
+            daily_by_date=daily_by_date,
+            limit_by_date={
+                "20260105": limit_frame(
+                    {"ts_code": "300001.SZ", "name": "样本一", "limit": "U", "limit_times": 1}
+                )
+            },
+            benchmark_close_by_date=benchmark_close_by_date,
+        )
+
+        row = result.details.iloc[0]
+        self.assertEqual(row["1日基准收益率(%)"], 1.0)
+        self.assertEqual(row["1日超额收益率(%)"], 9.0)
+        self.assertEqual(row["3日基准收益率(%)"], 3.0)
+        self.assertEqual(row["3日超额收益率(%)"], 27.0)
+        self.assertTrue(pd.isna(row["5日基准收益率(%)"]))
+        self.assertTrue(pd.isna(row["5日超额收益率(%)"]))
+        self.assertEqual(result.missing_benchmark_count, 1)
+
     def test_builds_complete_event_returns_and_filters_non_events(self):
         daily_by_date = {
             "20260105": daily_frame(**{"300001.SZ": 10.0}),
