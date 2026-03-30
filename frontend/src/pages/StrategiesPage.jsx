@@ -5,7 +5,7 @@ import { DataTable } from "../components/DataTable";
 import { MetricGrid } from "../components/MetricGrid";
 import { SectionCard } from "../components/SectionCard";
 import { StatusBadge } from "../components/StatusBadge";
-import { buildStrategyMetrics } from "./strategyViewModel";
+import { STUDY_BADGE, buildStrategyMetrics } from "./strategyViewModel";
 
 
 export function StrategiesPage() {
@@ -84,7 +84,7 @@ export function StrategiesPage() {
           <SectionCard
             title="研究概览"
             subtitle={`结果文件：${study.file_name || "-"} · 更新时间：${study.updated_at || "-"}`}
-            action={<StatusBadge status="v1" label="第一版可用" />}
+            action={<StatusBadge status={STUDY_BADGE.status} label={STUDY_BADGE.label} />}
           >
             <MetricGrid items={metrics} />
             <div className="research-definition-grid">
