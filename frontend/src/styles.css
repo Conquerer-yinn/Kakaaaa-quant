@@ -314,6 +314,11 @@ a {
   background: rgba(251, 146, 60, 0.18);
 }
 
+.status-badge.v2 {
+  color: #1e3a8a;
+  background: rgba(59, 130, 246, 0.14);
+}
+
 .status-badge.experimental,
 .status-badge.planning {
   color: #92400e;
